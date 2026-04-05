@@ -3,36 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - Core v4.0</title>
+    <title>XO Network - Core v4.2</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); overflow-x: hidden; }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--xo-white); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
         .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; }
         .nav-item.active { color: var(--xo-pink); }
         .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
-        .view { display: none; animation: fadeIn 0.3s; }
+        .view { display: none; }
         .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Card & UI */
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; color: #333; }
-        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
+        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; color: #333; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; }
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
-        
-        /* Chat & Grid Styling */
-        .chat-box { background: #eee; border-radius: 20px; padding: 15px; max-height: 300px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column-reverse; }
-        .msg { background: white; padding: 10px 15px; border-radius: 15px; margin: 5px 0; font-size: 0.9rem; align-self: flex-start; max-width: 80%; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .msg.me { background: var(--xo-pink); color: white; align-self: flex-end; }
-        .input-group { display: flex; gap: 10px; margin-top: 10px; }
-        .input-group input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; outline: none; }
-        
-        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; display:none; }
-        #qrcode-out { text-align:center; display:none; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
+
+        /* Grid Task List */
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .task-content h4 { margin: 0; font-size: 1.1rem; color: #333; }
+        .task-content p { margin: 4px 0 0; font-size: 0.8rem; color: #888; }
+        .btn-take { background: var(--xo-pink); color: white; border: none; padding: 8px 15px; border-radius: 12px; font-weight: bold; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -41,63 +39,54 @@
     
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.8rem;">XO CORE WALLET</div>
+            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.8rem;">XO CORE</div>
             <div class="balance-val" id="balance">1000</div>
-            <div style="text-align: center; color: #aaa; font-size: 0.8rem; font-weight: bold;">TILLGÄNGLIG KRAFT</div>
+            <div style="text-align: center; color: #aaa; font-weight: bold;">XO CREDITS</div>
         </div>
         <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
         <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
-        <div id="reader"></div>
-        <div id="qrcode-out"></div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-sec" style="font-size: 0.7rem; padding: 10px;" onclick="exportWallet()">💾 SÄKERHETSKOPIA TILL USB</button>
-        </div>
+        <div id="reader" style="display:none; width:100%; border-radius:20px; overflow:hidden; margin:10px 0;"></div>
+        <div id="qrcode-out" style="display:none; text-align:center; padding:15px; background:white; border-radius:20px; border:2px solid var(--xo-pink); margin:10px 0;"></div>
     </div>
 
     <div id="view-grid" class="view">
-        <h2 style="margin-bottom: 5px;">Viskningen 🌀</h2>
-        <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">Decentraliserat flöde i realtid.</p>
+        <h2 style="margin-bottom: 5px;">Griden 🌍</h2>
+        <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px;">Hjälp efterfrågas i ditt nätverk.</p>
         
-        <div class="chat-box" id="grid-messages">
+        <div id="task-container">
             </div>
 
-        <div class="input-group">
-            <input type="text" id="chat-input" placeholder="Skriv ett behov eller hälsa...">
-            <button class="btn btn-main" style="width: auto; padding: 12px 20px; margin: 0;" onclick="sendMessage()">SÄND</button>
+        <div class="card" style="margin-top: 30px; border-style: dashed; background: #fafafa;">
+            <h4 style="margin-top: 0;">Behöver du hjälp?</h4>
+            <input type="text" id="task-input" placeholder="T.ex. Behöver bärhjälp imorgon" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin-bottom: 10px;">
+            <button class="btn btn-main" style="margin: 0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
         </div>
     </div>
 
     <div id="view-family" class="view">
         <h2>Familje-Loggen</h2>
-        <div class="card"><h4>Hushållets saldo: <span id="fam-bal">450</span> XO</h4></div>
-        <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Dagens uppgifter:</div>
-        <div id="family-tasks"></div>
-        <button class="btn btn-sec" onclick="addFamilyTask()">+ LÄGG TILL SYSSELA</button>
+        <div class="card"><h4>Hushållets kraft: <span style="color:var(--xo-pink)">450</span> XO</h4></div>
+        <button class="btn btn-sec">+ NY SYSSELA</button>
     </div>
 
     <div id="view-market" class="view">
         <h2>Torget</h2>
-        <div class="card">
-            <h4>Lokal Matbutik</h4>
-            <p>10% rabatt (50 XO)</p>
-            <button class="btn btn-main" onclick="alert('Värdecheck skapad!')">HÄMTA CHECK</button>
-        </div>
+        <div class="card"><h4>Lokal Butik</h4><p>Växla 50 XO mot 10% rabatt</p><button class="btn btn-main">SKAPA CHECK</button></div>
     </div>
 
 </div>
 
 <div class="nav-bar">
     <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
-    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌀</span>Viskningen</div>
+    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
     <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
     <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
-    // --- INITIERA DECENTRALISERAD DATA (GunDB) ---
-    // Vi använder offentliga relay-noder för att hitta varandra utan en central server
+    // --- DECENTRALISERAD MOTOR ---
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const gridChat = gun.get('xo_network_global_grid').get('messages');
+    const tasks = gun.get('xo_grid_v4_tasks');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     let myID = localStorage.getItem('xo_peer_id') || 'User_' + Math.random().toString(36).substr(2, 5);
@@ -108,28 +97,51 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    // --- CHATT LOGIK (VISKNINGEN) ---
-    function sendMessage() {
-        const input = document.getElementById('chat-input');
+    // --- GRIDEN LOGIK (REALTIDS-LISTA) ---
+    function postTask() {
+        const input = document.getElementById('task-input');
         if(!input.value) return;
         
-        gridChat.set({
-            sender: myID,
-            text: input.value,
+        // Vi sparar uppgiften med ett unikt ID i det decentraliserade nätverket
+        tasks.get(Math.random().toString(36).substr(2, 9)).put({
+            title: input.value,
+            creator: myID,
+            reward: 50,
+            status: 'open',
             time: Date.now()
         });
         input.value = "";
     }
 
-    // Lyssna på inkommande viskningar (från hela världen/nätverket)
-    gridChat.map().once((data, id) => {
-        if(!data) return;
-        const msgDiv = document.getElementById('grid-messages');
-        const msgEl = document.createElement('div');
-        msgEl.className = data.sender === myID ? 'msg me' : 'msg';
-        msgEl.innerHTML = `<strong>${data.sender}:</strong><br>${data.text}`;
-        msgDiv.prepend(msgEl);
+    // Lyssna på ALLA uppgifter som skapas i nätverket
+    tasks.map().on((data, id) => {
+        if(!data || data.status !== 'open') return;
+        
+        // Kolla om vi redan har ritat ut denna (för att slippa dubbletter)
+        if(document.getElementById(id)) return;
+
+        const container = document.getElementById('task-container');
+        const taskEl = document.createElement('div');
+        taskEl.id = id;
+        taskEl.className = 'task-card';
+        taskEl.innerHTML = `
+            <div class="task-content">
+                <h4>${data.title}</h4>
+                <p>Belöning: ${data.reward} XO • Av: ${data.creator}</p>
+            </div>
+            <button class="btn-take" onclick="claimTask('${id}')">HJÄLP</button>
+        `;
+        container.prepend(taskEl);
     });
+
+    function claimTask(id) {
+        if(confirm("Vill du ta på dig detta uppdrag?")) {
+            // Vi sätter status till 'claimed' så den försvinner från Griden för andra
+            tasks.get(id).put({ status: 'claimed' });
+            document.getElementById(id).remove();
+            alert("Snyggt! Kontakta personen för att utföra uppdraget.");
+        }
+    }
 
     // --- NAVIGATION ---
     function switchView(id) {
@@ -139,37 +151,22 @@
         document.getElementById('nav-' + id).classList.add('active');
     }
 
-    // --- PLÅNBOK FUNKTIONER ---
+    // --- PLÅNBOK ---
     function openScanner() {
-        const readerDiv = document.getElementById('reader');
-        readerDiv.style.display = 'block';
-        const scanner = new Html5Qrcode("reader");
-        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-            if(text.startsWith("XO_GIFT_")) {
-                balance += 50; save(); alert("Mottog 50 XO!");
-                scanner.stop(); readerDiv.style.display='none';
-            }
+        const r = document.getElementById('reader'); r.style.display = 'block';
+        const s = new Html5Qrcode("reader");
+        s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
+            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); alert("+50 XO!"); s.stop(); r.style.display='none'; }
         });
     }
 
     function showQR() {
         if(balance < 50) return alert("Saldo för lågt!");
-        const qrOut = document.getElementById('qrcode-out');
-        qrOut.innerHTML = ""; qrOut.style.display = "block";
+        const out = document.getElementById('qrcode-out'); out.innerHTML = ""; out.style.display = "block";
         const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
-        QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (err, canvas) => {
-            qrOut.appendChild(canvas);
-            balance -= 50; save();
+        QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (e, cv) => {
+            out.appendChild(cv); balance -= 50; save();
         });
-    }
-
-    function exportWallet() {
-        const data = JSON.stringify({ balance, id: myID, timestamp: Date.now() });
-        const blob = new Blob([data], { type: 'text/plain' });
-        const anchor = document.createElement('a');
-        anchor.download = `xo_vault_backup.xo`;
-        anchor.href = window.URL.createObjectURL(blob);
-        anchor.click();
     }
 
     save();
