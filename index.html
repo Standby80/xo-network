@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XO Network</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--xo-bg); margin: 0; color: var(--xo-dark); -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* UI Element */
+        .card { background: white; border-radius: 25px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
+        .logo { font-size: 1.5rem; font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; margin-bottom: 10px; }
+        .balance-display { font-size: 3.5rem; font-weight: 800; margin: 10px 0; }
+        .decay-tag { font-size: 0.7rem; color: #ffa500; font-weight: bold; height: 15px; }
+
+        /* Knappar */
+        .btn { border: none; padding: 18px; border-radius: 18px; font-size: 1.1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-main { background: var(--xo-pink); color: white; }
+        .btn-sec { background: var(--xo-dark); color: white; }
+        .btn-cancel { background: #eee; color: #666; margin-top: 10px; }
+
+        /* Scanner & QR */
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; margin-top: 10px; display: none; background: black; }
+        #qrcode-out { margin-top: 20px; padding: 15px; background: white; display: inline-block; border-radius: 15px; display: none; }
+        canvas { max-width: 100%; height: auto !important; }
+
+        /* Logg */
+        .history { flex-grow: 1; background: #fff; border-radius: 20px; padding: 15px; font-size: 0.8rem; overflow-y: auto; max-height: 150px; border: 1px solid #eee; }
+        .log-entry { padding: 5px 0; border-bottom: 1px solid #f1f1f1; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="logo">XO NETWORK</div>
+        <div class="decay-tag" id="decay-status"></div>
+        <div class="balance-display" id="balance">1000</div>
+        <div style="font-weight: 600; color: #888;">XO CREDITS</div>
+    </div>
+
+    <div id="main-ui">
+        <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
+        <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
+    </div>
+
+    <div id="scanner-ui" style="display:none;">
+        <div id="reader"></div>
+        <button class="btn btn-cancel" onclick="closeScanner()">AVBRYT</button>
+    </div>
+
+    <div id="qr-ui" style="display:none; text-align:center;">
+        <div id="qrcode-out"></div>
+        <p style="font-size: 0.9rem; color: #666;">Låt grannen skanna koden</p>
+        <button class="btn btn-cancel" onclick="closeQR()">KLART / AVBRYT</button>
+    </div>
+
+    <p style="font-size: 0.8rem; color: #aaa; text-align: center;">Pelare 4: Rostning aktiv vid inaktivitet</p>
+    
+    <div class="history" id="log">
+        <div class="log-entry"><span>[System]</span> <span>Välkommen till flocken</span></div>
+    </div>
+</div>
+
+<script>
+    let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
+    let lastActive = parseInt(localStorage.getItem('xo_time')) || Date.now();
+    let scanner = null;
+
+    function save() {
+        localStorage.setItem('xo_bal', balance);
+        localStorage.setItem('xo_time', lastActive);
+        document.getElementById('balance').innerText = Math.floor(balance);
+    }
+
+    // Rost-logik (1% per månad simulerat långsamt här)
+    setInterval(() => {
+        const now = Date.now();
+        if (now - lastActive > 30000 && balance > 0) {
+            balance -= 0.02; // Mycket långsam rostning för test
+            document.getElementById('decay-status').innerText = "ENTROPI AKTIV 🌀";
+            save();
+        } else {
+            document.getElementById('decay-status').innerText = "";
+        }
+    }, 5000);
+
+    // --- SKANNER ---
+    function openScanner() {
+        document.getElementById('main-ui').style.display = 'none';
+        document.getElementById('scanner-ui').style.display = 'block';
+        document.getElementById('reader').style.display = 'block';
+
+        scanner = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        scanner.start({ facingMode: "environment" }, config, (text) => {
+            if(text.startsWith("XO_GIFT_")) {
+                balance += 50;
+                lastActive = Date.now();
+                addLog("Mottog 50 XO via skanning");
+                closeScanner();
+                save();
+                alert("Överföring lyckades! +50 XO");
+            }
+        }).catch(err => {
+            alert("Kamerafel: Se till att du gett tillåtelse i webbläsaren.");
+            closeScanner();
+        });
+    }
+
+    function closeScanner() {
+        if(scanner) scanner.stop().then(() => {
+            document.getElementById('main-ui').style.display = 'block';
+            document.getElementById('scanner-ui').style.display = 'none';
+        });
+    }
+
+    // --- GENERERA QR ---
+    function showQR() {
+        if(balance < 50) return alert("För lågt saldo!");
+        document.getElementById('main-ui').style.display = 'none';
+        document.getElementById('qr-ui').style.display = 'block';
+        document.getElementById('qrcode-out').style.display = 'inline-block';
+        
+        const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
+        QRCode.toCanvas(document.getElementById('qrcode-out'), code, { width: 200 }, (err) => {
+            if(err) console.error(err);
+            balance -= 50;
+            lastActive = Date.now();
+            addLog("Skapade gåva på 50 XO");
+            save();
+        });
+    }
+
+    function closeQR() {
+        document.getElementById('qr-ui').style.display = 'none';
+        document.getElementById('main-ui').style.display = 'block';
+    }
+
+    function addLog(msg) {
+        const log = document.getElementById('log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<span>${msg}</span> <span>${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+        log.prepend(entry);
+    }
+
+    save(); // Initiera display
+</script>
+
+</body>
+</html>
