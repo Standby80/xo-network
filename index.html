@@ -3,73 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network</title>
+    <title>XO Network - Core</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; color: var(--xo-dark); }
-        .container { max-width: 500px; margin: 0 auto; padding: 20px; text-align: center; min-height: 100vh; display: flex; flex-direction: column; }
-        .card { background: white; border-radius: 25px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; }
-        .logo { font-size: 1.5rem; font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; }
-        .balance-display { font-size: 3.5rem; font-weight: 800; margin: 10px 0; color: #333; }
-        .btn { border: none; padding: 18px; border-radius: 18px; font-size: 1.1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
+        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 80px; color: var(--xo-dark); }
+        
+        /* Navigation */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--xo-white); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
+        .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; }
+        .nav-item.active { color: var(--xo-pink); }
+        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
+
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Gemensamma element */
+        .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
+        .balance-val { font-size: 3rem; font-weight: 800; text-align: center; margin: 10px 0; }
+        .btn { border: none; padding: 15px; border-radius: 15px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 5px 0; }
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
-        .btn-cancel { background: #eee; color: #666; }
-        #reader { width: 100%; border-radius: 20px; display: none; background: black; overflow: hidden; }
-        #qrcode-out { margin-top: 20px; padding: 15px; background: white; border-radius: 15px; display: none; border: 2px solid var(--xo-pink); }
-        canvas { max-width: 100%; height: auto !important; }
-        .history { background: #fff; border-radius: 20px; padding: 15px; font-size: 0.8rem; text-align: left; flex-grow: 1; border: 1px solid #eee; overflow-y: auto; margin-top: 10px; }
+
+        /* Task List Styling */
+        .task-item { background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; }
+        .task-info h4 { margin: 0; font-size: 1rem; }
+        .task-info p { margin: 5px 0 0; font-size: 0.8rem; color: #888; }
+        
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card">
-        <div class="logo">XO NETWORK</div>
-        <div id="decay-status" style="font-size: 0.7rem; color: #e67e22; height: 15px; font-weight: bold;"></div>
-        <div class="balance-display" id="balance">1000</div>
-        <div id="label-credits" style="font-weight: 600; color: #888;">XO CREDITS</div>
+    
+    <div id="view-wallet" class="view active">
+        <div class="card">
+            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px;">XO WALLET</div>
+            <div id="decay-status" style="font-size: 0.7rem; color: orange; height: 15px;"></div>
+            <div class="balance-val" id="balance">1000</div>
+            <div style="text-align: center; color: #888; font-weight: bold;">XO CREDITS</div>
+        </div>
+        <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
+        <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
+        <div id="reader" style="display:none; margin-top:10px;"></div>
+        <div id="qrcode-out" style="text-align:center; display:none; margin-top:10px;"></div>
     </div>
 
-    <div id="main-ui">
-        <button class="btn btn-main" id="btn-scan" onclick="openScanner()"></button>
-        <button class="btn btn-sec" id="btn-give" onclick="showQR()"></button>
+    <div id="view-tasks" class="view">
+        <h2 id="title-tasks">Lokala Behov</h2>
+        <div id="task-list">
+            <div class="task-item">
+                <div class="task-info"><h4>Klippa gräsmattan</h4><p>Belöning: 100 XO</p></div>
+                <button class="btn btn-main" style="width:auto; padding: 10px;" onclick="alert('Du har tagit på dig uppdraget!')">TA</button>
+            </div>
+        </div>
+        <hr>
+        <button class="btn btn-sec" onclick="addTask()">+ SKAPA NYTT BEHOV</button>
     </div>
 
-    <div id="scanner-ui" style="display:none;">
-        <div id="reader"></div>
-        <button class="btn btn-cancel" id="btn-cancel-scan" onclick="closeScanner()"></button>
+    <div id="view-family" class="view">
+        <h2 id="title-family">Familje-Loggen</h2>
+        <div class="card">
+            <h4>Barnens Poäng: <span style="color:var(--xo-pink)">450 XO</span></h4>
+            <div style="font-size: 0.8rem; color:#666;">Uppgifter kvar idag: 2</div>
+        </div>
+        <div class="task-item" style="border-left-color: #4a90e2;">
+            <div class="task-info"><h4>Städa rummet</h4><p>Belöning: 20 XO</p></div>
+            <button class="btn btn-sec" style="width:auto; padding: 10px;" onclick="earnFamily()">KLART</button>
+        </div>
     </div>
 
-    <div id="qr-ui" style="display:none;">
-        <div id="qrcode-out"></div>
-        <p id="label-qr-instr" style="font-size: 0.9rem; color: #666; margin-top: 15px;"></p>
-        <button class="btn btn-cancel" id="btn-close-qr" onclick="closeQR()"></button>
+    <div id="view-business" class="view">
+        <h2>Torget</h2>
+        <p style="font-size: 0.8rem;">Använd dina XO för rabatter hos anslutna partners.</p>
+        <div class="card" style="display:flex; justify-content: space-between; align-items: center;">
+            <div style="text-align:left;">
+                <h4 style="margin:0;">Lokal Pizzeria</h4>
+                <p style="margin:5px 0 0; font-size: 0.7rem;">20% rabatt vid 50 XO</p>
+            </div>
+            <button class="btn btn-main" style="width:auto; padding: 10px;" onclick="createVoucher('Pizzeria')">HÄMTA</button>
+        </div>
     </div>
 
-    <div class="history" id="log"></div>
-    <button onclick="resetSystem()" style="background:none; border:none; color:#ccc; font-size: 0.6rem; margin-top: 10px;">RESTART XO (DEBUG)</button>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')">
+        <span class="nav-icon">💰</span>Plånbok
+    </div>
+    <div class="nav-item" id="nav-tasks" onclick="switchView('tasks')">
+        <span class="nav-icon">📋</span>Griden
+    </div>
+    <div class="nav-item" id="nav-family" onclick="switchView('family')">
+        <span class="nav-icon">🏠</span>Familj
+    </div>
+    <div class="nav-item" id="nav-business" onclick="switchView('business')">
+        <span class="nav-icon">🏢</span>Torget
+    </div>
 </div>
 
 <script>
-    const i18n = {
-        sv: { credits: "XO POÄNG", scan: "SKANNA & TA EMOT", give: "GE BORT 50 XO", cancel: "AVBRYT", done: "KLART", qrInstr: "Visa denna kod för din granne", entropy: "ENTROPI AKTIV 🌀", welcome: "System online. Välkommen.", received: "Mottog 50 XO", created: "Gåva skapad (-50 XO)", low: "För lågt saldo (minst 50 krävs)", cam: "Kamerafel" },
-        en: { credits: "XO CREDITS", scan: "SCAN & RECEIVE", give: "GIVE 50 XO", cancel: "CANCEL", done: "DONE", qrInstr: "Show this code to your neighbor", entropy: "ENTROPY ACTIVE 🌀", welcome: "System online. Welcome.", received: "Received 50 XO", created: "Gift created (-50 XO)", low: "Balance too low (need 50)", cam: "Camera error" }
-    };
+    // --- NAVIGATION LOGIK ---
+    function switchView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById('view-' + viewId).classList.add('active');
+        document.getElementById('nav-' + viewId).classList.add('active');
+        
+        // Stäng skanner/QR om man byter vy
+        if(scanner) { scanner.stop(); document.getElementById('reader').style.display = 'none'; }
+        document.getElementById('qrcode-out').style.display = 'none';
+    }
 
-    const langCode = navigator.language.split('-')[0];
-    const t = i18n[langCode] || i18n['en'];
-
-    document.getElementById('label-credits').innerText = t.credits;
-    document.getElementById('btn-scan').innerText = t.scan;
-    document.getElementById('btn-give').innerText = t.give;
-    document.getElementById('btn-cancel-scan').innerText = t.cancel;
-    document.getElementById('btn-close-qr').innerText = t.done;
-    document.getElementById('label-qr-instr').innerText = t.qrInstr;
-
+    // --- PLÅNBOKS LOGIK (Samma som innan) ---
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     let lastActive = parseInt(localStorage.getItem('xo_time')) || Date.now();
     let scanner = null;
@@ -81,80 +131,53 @@
     }
 
     setInterval(() => {
-        if (Date.now() - lastActive > 60000 && balance > 0.1) {
-            balance -= 0.05; document.getElementById('decay-status').innerText = t.entropy; save();
+        if (Date.now() - lastActive > 60000 && balance > 1) {
+            balance -= 0.01; document.getElementById('decay-status').innerText = "ENTROPI AKTIV 🌀"; save();
         } else { document.getElementById('decay-status').innerText = ""; }
     }, 5000);
 
     function openScanner() {
-        document.getElementById('main-ui').style.display = 'none';
-        document.getElementById('scanner-ui').style.display = 'block';
         document.getElementById('reader').style.display = 'block';
         scanner = new Html5Qrcode("reader");
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
             if(text.startsWith("XO_GIFT_")) {
-                balance += 50; lastActive = Date.now(); addLog(t.received); closeScanner(); save();
+                balance += 50; lastActive = Date.now(); save();
+                alert("Mottog 50 XO!"); scanner.stop(); document.getElementById('reader').style.display = 'none';
             }
-        }).catch(() => { alert(t.cam); closeScanner(); });
-    }
-
-    function closeScanner() {
-        if(scanner) scanner.stop().then(() => {
-            document.getElementById('main-ui').style.display = 'block';
-            document.getElementById('scanner-ui').style.display = 'none';
         });
     }
 
     function showQR() {
-        if(balance < 50) {
-            alert(t.low + " Current: " + Math.floor(balance));
-            return;
-        }
-        
-        const qrContainer = document.getElementById('qrcode-out');
-        qrContainer.innerHTML = ""; // Rensa gammal QR
-        document.getElementById('main-ui').style.display = 'none';
-        document.getElementById('qr-ui').style.display = 'block';
-        qrContainer.style.display = 'inline-block';
-
-        // Skapa en ny canvas inuti div:en
-        const canvas = document.createElement('canvas');
-        qrContainer.appendChild(canvas);
-
+        if(balance < 50) return alert("För lågt saldo!");
+        const qrOut = document.getElementById('qrcode-out');
+        qrOut.innerHTML = ""; qrOut.style.display = "block";
         const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
-        
-        QRCode.toCanvas(canvas, code, { width: 220, margin: 2 }, (err) => {
-            if(err) {
-                console.error(err);
-                alert("QR Error: " + err);
-                return;
-            }
-            balance -= 50; 
-            lastActive = Date.now(); 
-            addLog(t.created); 
-            save();
+        QRCode.toCanvas(document.createElement('canvas'), code, { width: 200 }, (err, canvas) => {
+            qrOut.appendChild(canvas);
+            balance -= 50; lastActive = Date.now(); save();
         });
     }
 
-    function closeQR() {
-        document.getElementById('qr-ui').style.display = 'none';
-        document.getElementById('main-ui').style.display = 'block';
-    }
-
-    function resetSystem() {
-        if(confirm("Vill du nollställa till 1000 XO?")) {
-            balance = 1000; lastActive = Date.now(); save(); addLog("System Reset");
+    // --- GRID/UPPGIFTS LOGIK ---
+    function addTask() {
+        let taskName = prompt("Vad behöver du hjälp med?");
+        if(taskName) {
+            const list = document.getElementById('task-list');
+            const item = document.createElement('div');
+            item.className = 'task-item';
+            item.innerHTML = `<div class="task-info"><h4>${taskName}</h4><p>Belöning: 50 XO</p></div><button class="btn btn-main" style="width:auto; padding: 10px;">TA</button>`;
+            list.prepend(item);
+            alert("Uppgift skapad! Nu kan grannar se den (simulerat lokalt).");
         }
     }
 
-    function addLog(msg) {
-        const log = document.getElementById('log');
-        log.innerHTML = `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:5px 0;">
-            <span>${msg}</span> <span>${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-        </div>` + log.innerHTML;
+    // --- BUTIKS LOGIK ---
+    function createVoucher(name) {
+        if(balance < 50) return alert("Du behöver minst 50 XO för att skapa en rabattcheck.");
+        balance -= 50; save();
+        alert(`Värdecheck skapad för ${name}! Visa denna bekräftelse i kassan.`);
     }
 
-    addLog(t.welcome);
     save();
 </script>
 
