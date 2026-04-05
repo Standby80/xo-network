@@ -8,31 +8,25 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 80px; color: var(--xo-dark); }
-        
-        /* Navigation */
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--xo-white); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
-        .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; }
+        .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; }
         .nav-item.active { color: var(--xo-pink); }
         .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
-
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
-        .view { display: none; }
+        .view { display: none; animation: fadeIn 0.3s; }
         .view.active { display: block; }
-
-        /* Gemensamma element */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .balance-val { font-size: 3rem; font-weight: 800; text-align: center; margin: 10px 0; }
-        .btn { border: none; padding: 15px; border-radius: 15px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 5px 0; }
+        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; color: #333; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
-
-        /* Task List Styling */
-        .task-item { background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; }
-        .task-info h4 { margin: 0; font-size: 1rem; }
-        .task-info p { margin: 5px 0 0; font-size: 0.8rem; color: #888; }
-        
-        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; }
+        .btn-small { padding: 8px; font-size: 0.8rem; background: #eee; color: #666; }
+        .task-item { background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; display:none; margin: 10px 0; }
+        #qrcode-out { text-align:center; display:none; margin: 15px 0; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
+        .history { background: #fff; border-radius: 20px; padding: 15px; font-size: 0.75rem; color: #888; max-height: 100px; overflow-y: auto; border: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -41,85 +35,69 @@
     
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px;">XO WALLET</div>
-            <div id="decay-status" style="font-size: 0.7rem; color: orange; height: 15px;"></div>
+            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.8rem;">XO CORE WALLET</div>
+            <div id="decay-status" style="font-size: 0.6rem; color: #ffa500; height: 12px; font-weight: bold; margin-top: 5px;"></div>
             <div class="balance-val" id="balance">1000</div>
-            <div style="text-align: center; color: #888; font-weight: bold;">XO CREDITS</div>
+            <div style="text-align: center; color: #aaa; font-size: 0.8rem; font-weight: bold;">TILLGÄNGLIG KRAFT</div>
         </div>
+        
         <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
         <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
-        <div id="reader" style="display:none; margin-top:10px;"></div>
-        <div id="qrcode-out" style="text-align:center; display:none; margin-top:10px;"></div>
+        
+        <div id="reader"></div>
+        <div id="qrcode-out"></div>
+
+        <div style="margin-top: 20px;">
+            <div style="font-size: 0.7rem; font-weight: bold; color: #ccc; margin-bottom: 10px; text-align: center;">VALV-INSTÄLLNINGAR</div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-small" onclick="exportWallet()">SÄKERHETSKOPIA (USB)</button>
+                <button class="btn btn-small" onclick="document.getElementById('importFile').click()">ÅTERSTÄLL VALV</button>
+                <input type="file" id="importFile" style="display:none" onchange="importWallet(event)">
+            </div>
+        </div>
     </div>
 
     <div id="view-tasks" class="view">
-        <h2 id="title-tasks">Lokala Behov</h2>
+        <h2>Lokala Behov</h2>
         <div id="task-list">
             <div class="task-item">
-                <div class="task-info"><h4>Klippa gräsmattan</h4><p>Belöning: 100 XO</p></div>
-                <button class="btn btn-main" style="width:auto; padding: 10px;" onclick="alert('Du har tagit på dig uppdraget!')">TA</button>
+                <div><h4>Laga vattenpump</h4><p>Belöning: 200 XO</p></div>
+                <button class="btn btn-main" style="width:auto;">TA</button>
             </div>
         </div>
-        <hr>
         <button class="btn btn-sec" onclick="addTask()">+ SKAPA NYTT BEHOV</button>
     </div>
 
     <div id="view-family" class="view">
-        <h2 id="title-family">Familje-Loggen</h2>
+        <h2>Familje-Loggen</h2>
         <div class="card">
-            <h4>Barnens Poäng: <span style="color:var(--xo-pink)">450 XO</span></h4>
-            <div style="font-size: 0.8rem; color:#666;">Uppgifter kvar idag: 2</div>
+            <h4>Barnens Saldon: <span style="color:var(--xo-pink)">450 XO</span></h4>
         </div>
         <div class="task-item" style="border-left-color: #4a90e2;">
-            <div class="task-info"><h4>Städa rummet</h4><p>Belöning: 20 XO</p></div>
-            <button class="btn btn-sec" style="width:auto; padding: 10px;" onclick="earnFamily()">KLART</button>
+            <div><h4>Städa rummet</h4><p>+20 XO</p></div>
+            <button class="btn btn-sec" style="width:auto;">GODKÄNN</button>
         </div>
     </div>
 
     <div id="view-business" class="view">
         <h2>Torget</h2>
-        <p style="font-size: 0.8rem;">Använd dina XO för rabatter hos anslutna partners.</p>
-        <div class="card" style="display:flex; justify-content: space-between; align-items: center;">
-            <div style="text-align:left;">
-                <h4 style="margin:0;">Lokal Pizzeria</h4>
-                <p style="margin:5px 0 0; font-size: 0.7rem;">20% rabatt vid 50 XO</p>
-            </div>
-            <button class="btn btn-main" style="width:auto; padding: 10px;" onclick="createVoucher('Pizzeria')">HÄMTA</button>
+        <div class="card">
+            <h4>Lokal Matbutik</h4>
+            <p>10% rabatt vid köp (50 XO)</p>
+            <button class="btn btn-main" onclick="alert('Värdecheck skapad!')">HÄMTA CHECK</button>
         </div>
     </div>
 
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')">
-        <span class="nav-icon">💰</span>Plånbok
-    </div>
-    <div class="nav-item" id="nav-tasks" onclick="switchView('tasks')">
-        <span class="nav-icon">📋</span>Griden
-    </div>
-    <div class="nav-item" id="nav-family" onclick="switchView('family')">
-        <span class="nav-icon">🏠</span>Familj
-    </div>
-    <div class="nav-item" id="nav-business" onclick="switchView('business')">
-        <span class="nav-icon">🏢</span>Torget
-    </div>
+    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
+    <div class="nav-item" id="nav-tasks" onclick="switchView('tasks')"><span class="nav-icon">🌍</span>Griden</div>
+    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
+    <div class="nav-item" id="nav-business" onclick="switchView('business')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
-    // --- NAVIGATION LOGIK ---
-    function switchView(viewId) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        
-        document.getElementById('view-' + viewId).classList.add('active');
-        document.getElementById('nav-' + viewId).classList.add('active');
-        
-        // Stäng skanner/QR om man byter vy
-        if(scanner) { scanner.stop(); document.getElementById('reader').style.display = 'none'; }
-        document.getElementById('qrcode-out').style.display = 'none';
-    }
-
-    // --- PLÅNBOKS LOGIK (Samma som innan) ---
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     let lastActive = parseInt(localStorage.getItem('xo_time')) || Date.now();
     let scanner = null;
@@ -130,56 +108,68 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    setInterval(() => {
-        if (Date.now() - lastActive > 60000 && balance > 1) {
-            balance -= 0.01; document.getElementById('decay-status').innerText = "ENTROPI AKTIV 🌀"; save();
-        } else { document.getElementById('decay-status').innerText = ""; }
-    }, 5000);
+    // --- NAVIGATION ---
+    function switchView(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('view-' + id).classList.add('active');
+        document.getElementById('nav-' + id).classList.add('active');
+        if(scanner) { scanner.stop(); document.getElementById('reader').style.display='none'; }
+        document.getElementById('qrcode-out').style.display='none';
+    }
 
+    // --- BACKUP FUNKTIONER (USB/FIL) ---
+    function exportWallet() {
+        const data = JSON.stringify({ balance, lastActive, timestamp: Date.now() });
+        const blob = new Blob([data], { type: 'text/plain' });
+        const anchor = document.createElement('a');
+        anchor.download = `xo_backup_${new Date().toLocaleDateString()}.xo`;
+        anchor.href = window.URL.createObjectURL(blob);
+        anchor.click();
+    }
+
+    function importWallet(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(confirm(`Vill du återställa valv med ${Math.floor(data.balance)} XO?`)) {
+                    balance = data.balance;
+                    lastActive = data.lastActive;
+                    save();
+                    location.reload();
+                }
+            } catch(err) { alert("Felaktig fil!"); }
+        };
+        reader.readAsText(file);
+    }
+
+    // --- QR & SCAN ---
     function openScanner() {
-        document.getElementById('reader').style.display = 'block';
+        const readerDiv = document.getElementById('reader');
+        readerDiv.style.display = 'block';
         scanner = new Html5Qrcode("reader");
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
             if(text.startsWith("XO_GIFT_")) {
                 balance += 50; lastActive = Date.now(); save();
-                alert("Mottog 50 XO!"); scanner.stop(); document.getElementById('reader').style.display = 'none';
+                alert("Överföring lyckades!"); scanner.stop(); readerDiv.style.display='none';
             }
         });
     }
 
     function showQR() {
-        if(balance < 50) return alert("För lågt saldo!");
+        if(balance < 50) return alert("Saldo för lågt!");
         const qrOut = document.getElementById('qrcode-out');
         qrOut.innerHTML = ""; qrOut.style.display = "block";
         const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
-        QRCode.toCanvas(document.createElement('canvas'), code, { width: 200 }, (err, canvas) => {
+        QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (err, canvas) => {
             qrOut.appendChild(canvas);
             balance -= 50; lastActive = Date.now(); save();
         });
     }
 
-    // --- GRID/UPPGIFTS LOGIK ---
-    function addTask() {
-        let taskName = prompt("Vad behöver du hjälp med?");
-        if(taskName) {
-            const list = document.getElementById('task-list');
-            const item = document.createElement('div');
-            item.className = 'task-item';
-            item.innerHTML = `<div class="task-info"><h4>${taskName}</h4><p>Belöning: 50 XO</p></div><button class="btn btn-main" style="width:auto; padding: 10px;">TA</button>`;
-            list.prepend(item);
-            alert("Uppgift skapad! Nu kan grannar se den (simulerat lokalt).");
-        }
-    }
-
-    // --- BUTIKS LOGIK ---
-    function createVoucher(name) {
-        if(balance < 50) return alert("Du behöver minst 50 XO för att skapa en rabattcheck.");
-        balance -= 50; save();
-        alert(`Värdecheck skapad för ${name}! Visa denna bekräftelse i kassan.`);
-    }
-
     save();
 </script>
-
 </body>
 </html>
