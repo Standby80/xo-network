@@ -9,17 +9,19 @@
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
         body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; color: var(--xo-dark); }
-        .container { max-width: 500px; margin: 0 auto; padding: 20px; text-align: center; }
-        .card { background: white; border-radius: 25px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; text-align: center; min-height: 100vh; display: flex; flex-direction: column; }
+        .card { background: white; border-radius: 25px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; }
         .logo { font-size: 1.5rem; font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; }
-        .balance-display { font-size: 3.5rem; font-weight: 800; margin: 10px 0; }
-        .btn { border: none; padding: 18px; border-radius: 18px; font-size: 1.1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; }
+        .balance-display { font-size: 3.5rem; font-weight: 800; margin: 10px 0; color: #333; }
+        .btn { border: none; padding: 18px; border-radius: 18px; font-size: 1.1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
         .btn-cancel { background: #eee; color: #666; }
-        #reader { width: 100%; border-radius: 20px; display: none; background: black; }
-        #qrcode-out { margin-top: 20px; padding: 15px; background: white; border-radius: 15px; display: none; }
-        .history { background: #fff; border-radius: 20px; padding: 15px; font-size: 0.8rem; text-align: left; max-height: 120px; overflow-y: auto; border: 1px solid #eee; }
+        #reader { width: 100%; border-radius: 20px; display: none; background: black; overflow: hidden; }
+        #qrcode-out { margin-top: 20px; padding: 15px; background: white; border-radius: 15px; display: none; border: 2px solid var(--xo-pink); }
+        canvas { max-width: 100%; height: auto !important; }
+        .history { background: #fff; border-radius: 20px; padding: 15px; font-size: 0.8rem; text-align: left; flex-grow: 1; border: 1px solid #eee; overflow-y: auto; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -27,7 +29,7 @@
 <div class="container">
     <div class="card">
         <div class="logo">XO NETWORK</div>
-        <div id="decay-status" style="font-size: 0.7rem; color: orange; height: 15px;"></div>
+        <div id="decay-status" style="font-size: 0.7rem; color: #e67e22; height: 15px; font-weight: bold;"></div>
         <div class="balance-display" id="balance">1000</div>
         <div id="label-credits" style="font-weight: 600; color: #888;">XO CREDITS</div>
     </div>
@@ -44,32 +46,23 @@
 
     <div id="qr-ui" style="display:none;">
         <div id="qrcode-out"></div>
-        <p id="label-qr-instr" style="font-size: 0.9rem; color: #666;"></p>
+        <p id="label-qr-instr" style="font-size: 0.9rem; color: #666; margin-top: 15px;"></p>
         <button class="btn btn-cancel" id="btn-close-qr" onclick="closeQR()"></button>
     </div>
 
     <div class="history" id="log"></div>
+    <button onclick="resetSystem()" style="background:none; border:none; color:#ccc; font-size: 0.6rem; margin-top: 10px;">RESTART XO (DEBUG)</button>
 </div>
 
 <script>
-    // --- GLOBAL LANGUAGE DICTIONARY ---
     const i18n = {
-        sv: { credits: "XO POÄNG", scan: "SKANNA & TA EMOT", give: "GE BORT 50 XO", cancel: "AVBRYT", done: "KLART", qrInstr: "Låt grannen skanna koden", entropy: "ENTROPI AKTIV 🌀", welcome: "Välkommen till flocken", received: "Mottog 50 XO", created: "Skapade gåva", low: "För lågt saldo!", cam: "Kamerafel" },
-        en: { credits: "XO CREDITS", scan: "SCAN & RECEIVE", give: "GIVE 50 XO", cancel: "CANCEL", done: "DONE", qrInstr: "Let neighbor scan the code", entropy: "ENTROPY ACTIVE 🌀", welcome: "Welcome to the flock", received: "Received 50 XO", created: "Created gift", low: "Balance low!", cam: "Camera error" },
-        es: { credits: "CRÉDITOS XO", scan: "ESCANEAR Y RECIBIR", give: "DAR 50 XO", cancel: "CANCELAR", done: "HECHO", qrInstr: "Deja que el vecino escanee", entropy: "ENTROPÍA ACTIVA 🌀", welcome: "Bienvenido al grupo", received: "Recibido 50 XO", created: "Regalo creado", low: "¡Saldo bajo!", cam: "Error de cámara" },
-        fr: { credits: "CRÉDITS XO", scan: "SCANNER ET RECEVOIR", give: "DONNER 50 XO", cancel: "ANNULER", done: "TERMINÉ", qrInstr: "Laissez le voisin scanner", entropy: "ENTROPIE ACTIVE 🌀", welcome: "Bienvenue dans le troupeau", received: "Reçu 50 XO", created: "Cadeau créé", low: "Solde insuffisant!", cam: "Erreur caméra" },
-        de: { credits: "XO GUTHABEN", scan: "SCANNEN & EMPFANGEN", give: "50 XO GEBEN", cancel: "ABBRECHEN", done: "FERTIG", qrInstr: "Nachbar scannnen lassen", entropy: "ENTROPIE AKTIV 🌀", welcome: "Willkommen in der Herde", received: "50 XO erhalten", created: "Geschenk erstellt", low: "Guthaben zu niedrig!", cam: "Kamerafehler" },
-        ar: { credits: "رصيد XO", scan: "مسح واستلام", give: "إعطاء 50 XO", cancel: "إلغاء", done: "تم", qrInstr: "دع الجار يمسح الرمز", entropy: "الأنتروبيا نشطة 🌀", welcome: "مرحباً بك في المجموعة", received: "تم استلام 50 XO", created: "تم إنشاء هدية", low: "الرصيد منخفض!", cam: "خطأ في الكاميرا" },
-        zh: { credits: "XO 积分", scan: "扫描并接收", give: "赠送 50 XO", cancel: "取消", done: "完成", qrInstr: "让邻居扫描代码", entropy: "熵增加中 🌀", welcome: "欢迎加入", received: "收到 50 XO", created: "已创建礼品", low: "余额不足!", cam: "摄像头错误" },
-        hi: { credits: "XO क्रेडिट", scan: "स्कैन और प्राप्त करें", give: "50 XO दें", cancel: "रद्द करें", done: "हो गया", qrInstr: "पड़ोसी को स्कैन करने दें", entropy: "एन्ट्रॉपी सक्रिय 🌀", welcome: "झुंड में आपका स्वागत है", received: "50 XO प्राप्त हुआ", created: "उपहार बनाया गया", low: "शेष राशि कम है!", cam: "कैमरा त्रुटि" },
-        pt: { credits: "CRÉDITOS XO", scan: "ESCANEAR E RECEBER", give: "DAR 50 XO", cancel: "CANCELAR", done: "CONCLUÍDO", qrInstr: "Deixe o vizinho escanear", entropy: "ENTROPIA ATIVA 🌀", welcome: "Bem-vindo ao bando", received: "Recebeu 50 XO", created: "Presente criado", low: "Saldo baixo!", cam: "Erro de câmera" }
+        sv: { credits: "XO POÄNG", scan: "SKANNA & TA EMOT", give: "GE BORT 50 XO", cancel: "AVBRYT", done: "KLART", qrInstr: "Visa denna kod för din granne", entropy: "ENTROPI AKTIV 🌀", welcome: "System online. Välkommen.", received: "Mottog 50 XO", created: "Gåva skapad (-50 XO)", low: "För lågt saldo (minst 50 krävs)", cam: "Kamerafel" },
+        en: { credits: "XO CREDITS", scan: "SCAN & RECEIVE", give: "GIVE 50 XO", cancel: "CANCEL", done: "DONE", qrInstr: "Show this code to your neighbor", entropy: "ENTROPY ACTIVE 🌀", welcome: "System online. Welcome.", received: "Received 50 XO", created: "Gift created (-50 XO)", low: "Balance too low (need 50)", cam: "Camera error" }
     };
 
-    // Auto-detect language
     const langCode = navigator.language.split('-')[0];
     const t = i18n[langCode] || i18n['en'];
 
-    // Update UI text
     document.getElementById('label-credits').innerText = t.credits;
     document.getElementById('btn-scan').innerText = t.scan;
     document.getElementById('btn-give').innerText = t.give;
@@ -88,8 +81,8 @@
     }
 
     setInterval(() => {
-        if (Date.now() - lastActive > 30000 && balance > 0) {
-            balance -= 0.02; document.getElementById('decay-status').innerText = t.entropy; save();
+        if (Date.now() - lastActive > 60000 && balance > 0.1) {
+            balance -= 0.05; document.getElementById('decay-status').innerText = t.entropy; save();
         } else { document.getElementById('decay-status').innerText = ""; }
     }, 5000);
 
@@ -113,19 +106,45 @@
     }
 
     function showQR() {
-        if(balance < 50) return alert(t.low);
+        if(balance < 50) {
+            alert(t.low + " Current: " + Math.floor(balance));
+            return;
+        }
+        
+        const qrContainer = document.getElementById('qrcode-out');
+        qrContainer.innerHTML = ""; // Rensa gammal QR
         document.getElementById('main-ui').style.display = 'none';
         document.getElementById('qr-ui').style.display = 'block';
-        document.getElementById('qrcode-out').style.display = 'inline-block';
+        qrContainer.style.display = 'inline-block';
+
+        // Skapa en ny canvas inuti div:en
+        const canvas = document.createElement('canvas');
+        qrContainer.appendChild(canvas);
+
         const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
-        QRCode.toCanvas(document.getElementById('qrcode-out'), code, { width: 200 }, () => {
-            balance -= 50; lastActive = Date.now(); addLog(t.created); save();
+        
+        QRCode.toCanvas(canvas, code, { width: 220, margin: 2 }, (err) => {
+            if(err) {
+                console.error(err);
+                alert("QR Error: " + err);
+                return;
+            }
+            balance -= 50; 
+            lastActive = Date.now(); 
+            addLog(t.created); 
+            save();
         });
     }
 
     function closeQR() {
         document.getElementById('qr-ui').style.display = 'none';
         document.getElementById('main-ui').style.display = 'block';
+    }
+
+    function resetSystem() {
+        if(confirm("Vill du nollställa till 1000 XO?")) {
+            balance = 1000; lastActive = Date.now(); save(); addLog("System Reset");
+        }
     }
 
     function addLog(msg) {
