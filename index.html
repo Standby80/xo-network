@@ -3,44 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - Core v4.3</title>
+    <title>XO Network - v4.4</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); -webkit-font-smoothing: antialiased; }
-        
-        /* Navigation */
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--xo-white); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
         .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; }
         .nav-item.active { color: var(--xo-pink); }
         .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
-
         .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view { display: none; }
         .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* UI Elements */
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; color: #333; }
-        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
+        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; color: #333; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; }
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
-        .btn-small { padding: 8px; font-size: 0.7rem; background: #eee; color: #666; border-radius: 10px; }
-
-        /* Grid Task Cards */
         .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .task-content h4 { margin: 0; font-size: 1rem; }
-        .task-content p { margin: 4px 0 0; font-size: 0.75rem; color: #888; }
-        .btn-take { background: var(--xo-pink); color: white; border: none; padding: 8px 12px; border-radius: 10px; font-weight: bold; font-size: 0.8rem; }
-
-        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; display:none; margin: 10px 0; }
-        #qrcode-out { text-align:center; display:none; margin: 15px 0; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
-        
         .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-right: 5px; }
-        .online { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .online { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; display:none; }
+        #qrcode-out { text-align:center; display:none; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
     </style>
 </head>
 <body>
@@ -49,48 +35,38 @@
     
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem;">XO CORE WALLET</div>
+            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem;">XO CORE</div>
             <div class="balance-val" id="balance">1000</div>
-            <div style="text-align: center; color: #aaa; font-size: 0.8rem; font-weight: bold;">TILLGÄNGLIG KRAFT</div>
+            <div style="text-align: center; color: #aaa; font-weight: bold;">XO CREDITS</div>
         </div>
         <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
         <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
         <div id="reader"></div>
         <div id="qrcode-out"></div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-small" onclick="exportWallet()">💾 BACKUP TILL USB</button>
-        </div>
     </div>
 
     <div id="view-grid" class="view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h2 style="margin:0;">Griden 🌍</h2>
-            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>SÖKER NÄTVERK</div>
+            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>SÖKER NÄTVERK...</div>
         </div>
         
-        <div id="task-container">
-            </div>
+        <div id="task-container"></div>
 
         <div class="card" style="margin-top: 30px; border-style: dashed; background: #fafafa;">
-            <h4 style="margin-top: 0;">Skapa efterfrågan</h4>
-            <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; box-sizing: border-box; margin-bottom: 10px; font-size: 1rem;">
+            <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 1rem;">
             <button class="btn btn-main" style="margin: 0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
         </div>
     </div>
 
     <div id="view-family" class="view">
         <h2>Familje-Loggen</h2>
-        <div class="card"><h4>Hushållets kraft: <span style="color:var(--xo-pink)">450</span> XO</h4></div>
-        <p style="font-size: 0.8rem; color: #888;">Här sparar du interna sysslor för hemmet.</p>
+        <div class="card"><h4>Hushållets kraft: 450 XO</h4></div>
     </div>
 
     <div id="view-market" class="view">
         <h2>Torget</h2>
-        <div class="card">
-            <h4>Lokal Matbutik</h4>
-            <p>Växla 50 XO mot 10% rabatt</p>
-            <button class="btn btn-main" onclick="alert('Värdecheck skapad!')">HÄMTA CHECK</button>
-        </div>
+        <div class="card"><h4>Lokal Partner</h4><button class="btn btn-main">SKAPA CHECK</button></div>
     </div>
 
 </div>
@@ -103,13 +79,17 @@
 </div>
 
 <script>
-    // --- DECENTRALISERAD MOTOR (GunDB) ---
-    // Vi använder flera relay-noder för att säkerställa kontakt mellan enheter
-    const gun = Gun([
+    // --- ROBUST NÄTVERKS-LOGIK ---
+    // Vi använder nu 4 olika globala noder för att garantera kontakt
+    const peers = [
         'https://gun-manhattan.herokuapp.com/gun',
-        'https://peer.wall.org/gun'
-    ]);
-    const gridTasks = gun.get('xo_grid_final_v1');
+        'https://peer.wall.org/gun',
+        'https://gun-test.herokuapp.com/gun',
+        'https://gun-us.herokuapp.com/gun'
+    ];
+    
+    const gun = Gun({ peers: peers, localStorage: true });
+    const gridTasks = gun.get('xo_grid_v4_4_stable');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     let myID = localStorage.getItem('xo_peer_id') || 'Anonym_' + Math.random().toString(36).substr(2, 4);
@@ -120,18 +100,19 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    // --- STATUS-INDIKATOR ---
-    gun.on('hi', () => {
-        document.getElementById('net-status').innerHTML = '<span class="status-dot online"></span>GRIDEN ONLINE';
+    // Visuell bekräftelse på anslutning
+    gun.on('hi', (peer) => {
+        console.log('Ansluten till:', peer);
+        document.getElementById('net-status').innerHTML = '<span class="status-dot online"></span>NÄTVERK SÄKRAT';
         document.getElementById('net-status').style.color = "#2ecc71";
     });
 
-    // --- GRID LOGIK ---
+    // --- GRID FUNKTIONER ---
     function postTask() {
         const input = document.getElementById('task-input');
         if(!input.value) return;
-        const taskID = 'ID_' + Math.random().toString(36).substr(2, 9);
-        gridTasks.get(taskID).put({
+        const id = 'T' + Date.now();
+        gridTasks.get(id).put({
             title: input.value,
             creator: myID,
             status: 'open',
@@ -142,33 +123,26 @@
 
     gridTasks.map().on((data, id) => {
         if(!data || data.status !== 'open') {
-            const existing = document.getElementById(id);
-            if(existing) existing.remove();
+            if(document.getElementById(id)) document.getElementById(id).remove();
             return;
         }
         if(document.getElementById(id)) return;
 
         const container = document.getElementById('task-container');
-        const taskEl = document.createElement('div');
-        taskEl.id = id;
-        taskEl.className = 'task-card';
-        taskEl.innerHTML = `
-            <div class="task-content">
-                <h4>${data.title}</h4>
-                <p>Av: ${data.creator} • 50 XO</p>
-            </div>
-            <button class="btn-take" onclick="claimTask('${id}')">HJÄLP</button>
-        `;
-        container.prepend(taskEl);
+        const el = document.createElement('div');
+        el.id = id;
+        el.className = 'task-card';
+        el.innerHTML = `<div class="task-content"><h4>${data.title}</h4><p>Av: ${data.creator}</p></div><button class="btn-take" onclick="claimTask('${id}')">HJÄLP</button>`;
+        container.prepend(el);
     });
 
     function claimTask(id) {
-        if(confirm("Vill du hjälpa till? Uppdraget försvinner från Griden för andra.")) {
+        if(confirm("Hjälpa till?")) {
             gridTasks.get(id).put({ status: 'claimed' });
         }
     }
 
-    // --- NAV & WALLET ---
+    // --- NAVIGATION & WALLET ---
     function switchView(id) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -177,29 +151,19 @@
     }
 
     function openScanner() {
-        const div = document.getElementById('reader'); div.style.display = 'block';
+        const d = document.getElementById('reader'); d.style.display = 'block';
         const s = new Html5Qrcode("reader");
         s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            if(t.startsWith("XO_GIFT_")) { 
-                balance += 50; save(); alert("+50 XO!"); 
-                s.stop(); div.style.display='none'; 
-            }
+            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
         });
     }
 
     function showQR() {
-        if(balance < 50) return alert("Saldot räcker inte.");
         const out = document.getElementById('qrcode-out'); out.innerHTML = ""; out.style.display = "block";
         const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
         QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (e, cv) => {
             out.appendChild(cv); balance -= 50; save();
         });
-    }
-
-    function exportWallet() {
-        const blob = new Blob([JSON.stringify({balance, myID})], {type: 'text/plain'});
-        const a = document.createElement('a'); a.download = 'mitt_xo_valv.xo';
-        a.href = window.URL.createObjectURL(blob); a.click();
     }
 
     save();
