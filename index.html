@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - Core</title>
+    <title>XO Network - Core v4.0</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); overflow-x: hidden; }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--xo-white); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
         .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; }
         .nav-item.active { color: var(--xo-pink); }
@@ -22,11 +23,16 @@
         .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
-        .btn-small { padding: 8px; font-size: 0.8rem; background: #eee; color: #666; }
-        .task-item { background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; display:none; margin: 10px 0; }
-        #qrcode-out { text-align:center; display:none; margin: 15px 0; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
-        .history { background: #fff; border-radius: 20px; padding: 15px; font-size: 0.75rem; color: #888; max-height: 100px; overflow-y: auto; border: 1px solid #eee; }
+        
+        /* Chat & Grid Styling */
+        .chat-box { background: #eee; border-radius: 20px; padding: 15px; max-height: 300px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column-reverse; }
+        .msg { background: white; padding: 10px 15px; border-radius: 15px; margin: 5px 0; font-size: 0.9rem; align-self: flex-start; max-width: 80%; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .msg.me { background: var(--xo-pink); color: white; align-self: flex-end; }
+        .input-group { display: flex; gap: 10px; margin-top: 10px; }
+        .input-group input { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ddd; outline: none; }
+        
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; background: black; display:none; }
+        #qrcode-out { text-align:center; display:none; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
     </style>
 </head>
 <body>
@@ -36,54 +42,44 @@
     <div id="view-wallet" class="view active">
         <div class="card">
             <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.8rem;">XO CORE WALLET</div>
-            <div id="decay-status" style="font-size: 0.6rem; color: #ffa500; height: 12px; font-weight: bold; margin-top: 5px;"></div>
             <div class="balance-val" id="balance">1000</div>
             <div style="text-align: center; color: #aaa; font-size: 0.8rem; font-weight: bold;">TILLGÄNGLIG KRAFT</div>
         </div>
-        
         <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
         <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
-        
         <div id="reader"></div>
         <div id="qrcode-out"></div>
-
-        <div style="margin-top: 20px;">
-            <div style="font-size: 0.7rem; font-weight: bold; color: #ccc; margin-bottom: 10px; text-align: center;">VALV-INSTÄLLNINGAR</div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-small" onclick="exportWallet()">SÄKERHETSKOPIA (USB)</button>
-                <button class="btn btn-small" onclick="document.getElementById('importFile').click()">ÅTERSTÄLL VALV</button>
-                <input type="file" id="importFile" style="display:none" onchange="importWallet(event)">
-            </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-sec" style="font-size: 0.7rem; padding: 10px;" onclick="exportWallet()">💾 SÄKERHETSKOPIA TILL USB</button>
         </div>
     </div>
 
-    <div id="view-tasks" class="view">
-        <h2>Lokala Behov</h2>
-        <div id="task-list">
-            <div class="task-item">
-                <div><h4>Laga vattenpump</h4><p>Belöning: 200 XO</p></div>
-                <button class="btn btn-main" style="width:auto;">TA</button>
+    <div id="view-grid" class="view">
+        <h2 style="margin-bottom: 5px;">Viskningen 🌀</h2>
+        <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">Decentraliserat flöde i realtid.</p>
+        
+        <div class="chat-box" id="grid-messages">
             </div>
+
+        <div class="input-group">
+            <input type="text" id="chat-input" placeholder="Skriv ett behov eller hälsa...">
+            <button class="btn btn-main" style="width: auto; padding: 12px 20px; margin: 0;" onclick="sendMessage()">SÄND</button>
         </div>
-        <button class="btn btn-sec" onclick="addTask()">+ SKAPA NYTT BEHOV</button>
     </div>
 
     <div id="view-family" class="view">
         <h2>Familje-Loggen</h2>
-        <div class="card">
-            <h4>Barnens Saldon: <span style="color:var(--xo-pink)">450 XO</span></h4>
-        </div>
-        <div class="task-item" style="border-left-color: #4a90e2;">
-            <div><h4>Städa rummet</h4><p>+20 XO</p></div>
-            <button class="btn btn-sec" style="width:auto;">GODKÄNN</button>
-        </div>
+        <div class="card"><h4>Hushållets saldo: <span id="fam-bal">450</span> XO</h4></div>
+        <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Dagens uppgifter:</div>
+        <div id="family-tasks"></div>
+        <button class="btn btn-sec" onclick="addFamilyTask()">+ LÄGG TILL SYSSELA</button>
     </div>
 
-    <div id="view-business" class="view">
+    <div id="view-market" class="view">
         <h2>Torget</h2>
         <div class="card">
             <h4>Lokal Matbutik</h4>
-            <p>10% rabatt vid köp (50 XO)</p>
+            <p>10% rabatt (50 XO)</p>
             <button class="btn btn-main" onclick="alert('Värdecheck skapad!')">HÄMTA CHECK</button>
         </div>
     </div>
@@ -92,21 +88,48 @@
 
 <div class="nav-bar">
     <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
-    <div class="nav-item" id="nav-tasks" onclick="switchView('tasks')"><span class="nav-icon">🌍</span>Griden</div>
+    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌀</span>Viskningen</div>
     <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
-    <div class="nav-item" id="nav-business" onclick="switchView('business')"><span class="nav-icon">🏪</span>Torget</div>
+    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
+    // --- INITIERA DECENTRALISERAD DATA (GunDB) ---
+    // Vi använder offentliga relay-noder för att hitta varandra utan en central server
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+    const gridChat = gun.get('xo_network_global_grid').get('messages');
+
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let lastActive = parseInt(localStorage.getItem('xo_time')) || Date.now();
-    let scanner = null;
+    let myID = localStorage.getItem('xo_peer_id') || 'User_' + Math.random().toString(36).substr(2, 5);
+    localStorage.setItem('xo_peer_id', myID);
 
     function save() {
         localStorage.setItem('xo_bal', balance);
-        localStorage.setItem('xo_time', lastActive);
         document.getElementById('balance').innerText = Math.floor(balance);
     }
+
+    // --- CHATT LOGIK (VISKNINGEN) ---
+    function sendMessage() {
+        const input = document.getElementById('chat-input');
+        if(!input.value) return;
+        
+        gridChat.set({
+            sender: myID,
+            text: input.value,
+            time: Date.now()
+        });
+        input.value = "";
+    }
+
+    // Lyssna på inkommande viskningar (från hela världen/nätverket)
+    gridChat.map().once((data, id) => {
+        if(!data) return;
+        const msgDiv = document.getElementById('grid-messages');
+        const msgEl = document.createElement('div');
+        msgEl.className = data.sender === myID ? 'msg me' : 'msg';
+        msgEl.innerHTML = `<strong>${data.sender}:</strong><br>${data.text}`;
+        msgDiv.prepend(msgEl);
+    });
 
     // --- NAVIGATION ---
     function switchView(id) {
@@ -114,46 +137,17 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('view-' + id).classList.add('active');
         document.getElementById('nav-' + id).classList.add('active');
-        if(scanner) { scanner.stop(); document.getElementById('reader').style.display='none'; }
-        document.getElementById('qrcode-out').style.display='none';
     }
 
-    // --- BACKUP FUNKTIONER (USB/FIL) ---
-    function exportWallet() {
-        const data = JSON.stringify({ balance, lastActive, timestamp: Date.now() });
-        const blob = new Blob([data], { type: 'text/plain' });
-        const anchor = document.createElement('a');
-        anchor.download = `xo_backup_${new Date().toLocaleDateString()}.xo`;
-        anchor.href = window.URL.createObjectURL(blob);
-        anchor.click();
-    }
-
-    function importWallet(event) {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if(confirm(`Vill du återställa valv med ${Math.floor(data.balance)} XO?`)) {
-                    balance = data.balance;
-                    lastActive = data.lastActive;
-                    save();
-                    location.reload();
-                }
-            } catch(err) { alert("Felaktig fil!"); }
-        };
-        reader.readAsText(file);
-    }
-
-    // --- QR & SCAN ---
+    // --- PLÅNBOK FUNKTIONER ---
     function openScanner() {
         const readerDiv = document.getElementById('reader');
         readerDiv.style.display = 'block';
-        scanner = new Html5Qrcode("reader");
+        const scanner = new Html5Qrcode("reader");
         scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
             if(text.startsWith("XO_GIFT_")) {
-                balance += 50; lastActive = Date.now(); save();
-                alert("Överföring lyckades!"); scanner.stop(); readerDiv.style.display='none';
+                balance += 50; save(); alert("Mottog 50 XO!");
+                scanner.stop(); readerDiv.style.display='none';
             }
         });
     }
@@ -165,8 +159,17 @@
         const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
         QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (err, canvas) => {
             qrOut.appendChild(canvas);
-            balance -= 50; lastActive = Date.now(); save();
+            balance -= 50; save();
         });
+    }
+
+    function exportWallet() {
+        const data = JSON.stringify({ balance, id: myID, timestamp: Date.now() });
+        const blob = new Blob([data], { type: 'text/plain' });
+        const anchor = document.createElement('a');
+        anchor.download = `xo_vault_backup.xo`;
+        anchor.href = window.URL.createObjectURL(blob);
+        anchor.click();
     }
 
     save();
