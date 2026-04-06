@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v5.0</title>
+    <title>XO Network - v6.0</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -23,7 +23,8 @@
         .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
         .online-dot { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: popIn 0.3s ease; }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -42,15 +43,15 @@
 
     <div id="view-grid" class="view">
         <div class="status-area">
-            <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
-            <div><span id="online-count" style="color:var(--xo-pink); font-size: 1rem; font-weight: 900;">1</span> <span style="opacity: 0.7;">NODER</span></div>
+            <div><span id="dot" class="dot"></span><span id="net-text">SÖKER NODER...</span></div>
+            <div><span id="online-count" style="color:var(--xo-pink); font-size: 1rem; font-weight: 900;">1</span> <span style="opacity: 0.7;">AKTIVA</span></div>
         </div>
         <div id="task-container"></div>
         <div class="card" style="margin-top: 20px; border-style: dashed; background: #fafafa;">
             <input type="text" id="task-input" placeholder="Vad behövs?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box;">
             <button class="btn btn-main" style="margin:0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
         </div>
-        <button onclick="forceSync()" style="background:none; border:none; color:#ccc; font-size:0.6rem; margin-top:20px; width:100%; text-decoration: underline;">TVINGA NY SYNKRONISERING</button>
+        <button onclick="forceSync()" style="background:none; border:none; color:#ccc; font-size:0.5rem; margin-top:20px; width:100%;">RENSA ALL CACHE & NOLLSTÄLL</button>
     </div>
 </div>
 
@@ -60,22 +61,19 @@
 </div>
 
 <script>
-    // --- KRAFTFULL SYNK-MOTOR ---
+    // --- FIX 1 & 2: Stabilare relä + Radisk (IndexedDB) istället för LocalStorage ---
     const gun = Gun({
-        peers: [
-            'https://gun-manhattan.herokuapp.com/gun',
-            'https://relay.peer.ooo/gun',
-            'https://gun-us.herokuapp.com/gun'
-        ],
-        localStorage: true
+        peers: ['https://relay.peer.ooo/gun'],
+        localStorage: false, 
+        retry: 250
     });
 
-    // NY UNIK NYCKEL FÖR v5.0
-    const world = gun.get('xo_mesh_v5_final_sync');
-    const nodes = gun.get('xo_nodes_v5');
+    // FIX 3: Separata namespaces för att undvika datakrockar
+    const taskDB = gun.get('xo_tasks_v6');
+    const nodeDB = gun.get('xo_presence_v6');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let myID = localStorage.getItem('xo_peer_id') || 'N-' + Math.random().toString(36).substr(2, 3);
+    let myID = localStorage.getItem('xo_peer_id') || 'N-' + Math.random().toString(36).substr(2, 5);
     localStorage.setItem('xo_peer_id', myID);
 
     function save() {
@@ -83,61 +81,83 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    // Heartbeat: Berätta för nätverket att jag finns
-    setInterval(() => {
-        nodes.get(myID).put({ lastSeen: Date.now() });
-    }, 4000);
+    // --- FIX 4: Robust Presence (Heartbeat) ---
+    const myPresence = nodeDB.get(myID);
+    function heartbeat() {
+        myPresence.put({ lastSeen: Date.now(), id: myID });
+    }
+    heartbeat();
+    setInterval(heartbeat, 5000);
 
-    // Lyssna på andra noder
     let activeNodes = {};
-    nodes.map().on((data, id) => {
-        if (data && data.lastSeen > Date.now() - 12000) {
+    nodeDB.map().on((data, id) => {
+        if (data && data.lastSeen > Date.now() - 15000) {
             activeNodes[id] = true;
         } else {
             delete activeNodes[id];
         }
         const count = Object.keys(activeNodes).length;
         document.getElementById('online-count').innerText = count;
-        if(count > 1) {
-            document.getElementById('dot').className = "dot online-dot";
-            document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
-        }
+        document.getElementById('dot').className = 'dot online-dot';
+        document.getElementById('net-text').innerText = count > 1 ? 'NÄTVERK SÄKRAT' : 'RELAY ANSLUTEN';
     });
 
-    gun.on('hi', () => {
-        if(Object.keys(activeNodes).length <= 1) {
-            document.getElementById('net-text').innerText = "ONLINE (ENSAM)";
-            document.getElementById('dot').className = "dot online-dot";
-        }
-    });
-
+    // --- FIX 5: Grid-system utan dubbletter ---
+    const renderedTasks = new Set();
     function postTask() {
-        const val = document.getElementById('task-input').value;
-        if(!val) return;
-        // Vi skickar datan till ett fast ID 'current_tasks' för att tvinga synk
-        world.get(Date.now()).put({ title: val, from: myID, status: 'open' });
-        document.getElementById('task-input').value = "";
+        const val = document.getElementById('task-input').value.trim();
+        if (!val) return;
+        const taskID = 'T_' + Date.now() + '_' + myID;
+        taskDB.get(taskID).put({ title: val, from: myID, status: 'open', ts: Date.now() });
+        document.getElementById('task-input').value = '';
     }
 
-    world.map().on((data, id) => {
-        if(!data || data.status !== 'open' || document.getElementById(id)) return;
+    taskDB.map().on((data, id) => {
+        if (!data || !data.title) return;
+        
+        // Ta bort om claimat
+        if (data.status === 'claimed') {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+            renderedTasks.delete(id);
+            return;
+        }
+
+        if (data.status !== 'open' || renderedTasks.has(id)) return;
+        
+        renderedTasks.add(id);
+        const container = document.getElementById('task-container');
         const el = document.createElement('div');
         el.id = id;
         el.className = 'task-card';
-        el.innerHTML = `<div><h4>${data.title}</h4><p>Från: ${data.from}</p></div><button class="btn" style="width:auto; padding:8px 12px; font-size:0.7rem; background:var(--xo-pink); color:white;" onclick="claim('${id}')">TA</button>`;
-        document.getElementById('task-container').prepend(el);
+        el.innerHTML = `
+            <div>
+                <h4 style="margin:0">${data.title}</h4>
+                <p style="margin:0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p>
+            </div>
+            <button class="btn" style="width:auto; padding:8px 12px; font-size:0.7rem; background:var(--xo-pink); color:white;" onclick="claim('${id}')">TA</button>
+        `;
+        container.prepend(el);
     });
 
+    // FIX 6: Säkrare Claim (Läs först, skriv sen)
     function claim(id) {
-        if(confirm("Hjälpa till?")) {
-            world.get(id).put({ status: 'claimed' });
-            document.getElementById(id).remove();
-        }
+        if (!confirm('Vill du hjälpa till?')) return;
+        taskDB.get(id).once(data => {
+            if (data && data.status === 'open') {
+                taskDB.get(id).put({ status: 'claimed', by: myID });
+            } else {
+                alert('Hoppsan, någon annan hann före!');
+            }
+        });
     }
 
     function forceSync() {
-        localStorage.clear();
-        location.reload();
+        if (confirm('Detta nollställer din cache. Fortsätta?')) {
+            localStorage.clear();
+            indexedDB.deleteDatabase('radata');
+            location.reload();
+        }
     }
 
     function switchView(v) {
@@ -147,18 +167,20 @@
         document.getElementById('nav-'+v).classList.add('active');
     }
 
+    // WALLET FUNKTIONER (QR/SCAN)
     function openScanner() {
         const d = document.getElementById('reader'); d.style.display='block';
         const s = new Html5Qrcode("reader");
         s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
+            if (t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
         });
     }
 
     function showQR() {
-        const o = document.getElementById('qrcode-out'); o.innerHTML=""; o.style.display='block';
+        if (balance < 50) return alert('För lite XO!');
+        const o = document.getElementById('qrcode-out'); o.innerHTML=''; o.style.display='block';
         QRCode.toCanvas(document.createElement('canvas'), "XO_GIFT_"+Math.random(), { width: 220 }, (e, c) => {
-            o.appendChild(c); balance -= 50; save();
+            if(!e) { o.appendChild(c); balance -= 50; save(); }
         });
     }
 
