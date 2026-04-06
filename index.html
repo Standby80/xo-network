@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v8.5</title>
+    <title>XO Network - v10.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -16,23 +16,24 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         /* Wallet Cards */
-        .card { background: white; border-radius: 30px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; position: relative; overflow: hidden; }
+        .card { background: white; border-radius: 30px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; position: relative; }
         .balance-label { font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem; text-transform: uppercase; }
         .balance-val { font-size: 4rem; font-weight: 800; margin: 10px 0; color: #333; letter-spacing: -2px; }
         
-        /* Stats Styling */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: #fff; padding: 15px; border-radius: 20px; border: 1px solid #eee; text-align: center; }
-        .stat-val { display: block; font-weight: 800; font-size: 1.2rem; color: var(--xo-dark); }
-        .stat-label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; font-weight: bold; }
+        /* Entropy Bar */
+        .progress-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; margin: 15px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--xo-pink); border-radius: 10px; transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
-        /* Backup Section */
-        .backup-box { background: #2d3436; color: white; border-radius: 25px; padding: 20px; margin-top: 20px; }
-        .backup-text { font-size: 0.75rem; line-height: 1.4; opacity: 0.8; margin-bottom: 15px; }
-
-        .btn { border: none; padding: 18px; border-radius: 20px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 5px 0; transition: 0.2s; }
+        /* Buttons */
+        .btn { border: none; padding: 18px; border-radius: 20px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 5px 0; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-pink { background: var(--xo-pink); color: white; }
-        .btn-outline { background: transparent; border: 2px solid rgba(255,255,255,0.2); color: white; font-size: 0.8rem; }
+        .btn-dark { background: var(--xo-dark); color: white; }
+        .btn-outline { background: transparent; border: 2px solid #ddd; color: #888; font-size: 0.8rem; }
+
+        /* Witness List */
+        .witness-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; }
+        .witness-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 8px; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .witness-avatar { width: 35px; height: 35px; border-radius: 50%; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.7rem; }
 
         /* Nav */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; }
@@ -46,36 +47,38 @@
     
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div class="balance-label">Ditt Saldo</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="balance-label">Din Kraft</div>
+                <div id="node-badge" style="font-size: 0.5rem; background: #eee; padding: 3px 8px; border-radius: 10px; color: #999;">OFFLINE</div>
+            </div>
             <div class="balance-val" id="balance">1000</div>
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <div style="width: 100%; height: 6px; background: #eee; border-radius: 10px;">
-                    <div id="rust-bar" style="width: 98%; height: 100%; background: var(--xo-pink); border-radius: 10px;"></div>
-                </div>
-                <span style="font-size: 0.6rem; font-weight: bold; color: #aaa;">HÄLSA</span>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: bold; color: #aaa;">
+                <span>SYSTEMHÄLSA</span>
+                <span id="rust-percent">100%</span>
+            </div>
+            <div class="progress-bg">
+                <div id="rust-bar" class="progress-fill" style="width: 100%;"></div>
+            </div>
+            <p style="font-size: 0.55rem; color: #bbb; line-height: 1.4;">ID: <strong id="display-id">...</strong> (Dela detta för att bli signerad)</p>
+        </div>
+
+        <div class="card" style="padding: 15px; border: 1px dashed var(--xo-pink);">
+            <div class="balance-label" style="margin-bottom: 10px; font-size: 0.6rem;">Signera en granne (Ge tillit)</div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="target-id" placeholder="Grannens ID" style="flex: 1; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-size: 0.8rem; outline: none;">
+                <button class="btn btn-pink" style="width: auto; padding: 10px 20px; margin: 0; font-size: 0.8rem;" onclick="signNeighbor()">SIGNERA</button>
             </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-val">12</span>
-                <span class="stat-label">Transaktioner</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-val" style="color: #2ecc71;">+250</span>
-                <span class="stat-label">Vunnen Kraft</span>
+        <div class="witness-section">
+            <div class="balance-label" style="margin-bottom: 15px;">Dina Vittnen (Social Tillit)</div>
+            <div id="witness-list-container">
+                <p style="font-size: 0.7rem; color: #ccc; font-style: italic;">Inga vittnen än. Be en granne signera dig!</p>
             </div>
         </div>
 
-        <button class="btn btn-pink" onclick="switchView('grid')">🌍 GÅ TILL GRIDEN</button>
-        
-        <div class="backup-box">
-            <h4 style="margin: 0 0 10px 0; color: var(--xo-pink);">Säkra din framtid</h4>
-            <p class="backup-text">
-                I XO är du din egen bank. Det finns ingen "Glömt lösenord"-knapp. Om din telefon går sönder försvinner dina XO om du inte har en backup.
-            </p>
-            <button class="btn btn-outline" onclick="downloadBackup()">💾 LADDA NER SÄKERHETSKOPIA</button>
-        </div>
+        <button class="btn btn-outline" style="margin-top: 30px;" onclick="downloadBackup()">💾 EXPORTERA BACKUP</button>
     </div>
 
     <div id="view-grid" class="view">
@@ -99,45 +102,96 @@
     const SUPABASE_URL = 'https://pwittnltsbtojzkhovos.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const myID = localStorage.getItem('xo_id') || 'User-' + Math.random().toString(36).substr(2, 4);
-    localStorage.setItem('xo_id', myID);
-
-    const channel = supabaseClient.channel('xo-global', { config: { broadcast: { self: true } } });
-
-    // --- SALDO & BACKUP ---
+    
+    let myID = localStorage.getItem('xo_id') || 'XO-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
+    let lastActive = parseInt(localStorage.getItem('xo_last_active')) || Date.now();
+    let witnesses = JSON.parse(localStorage.getItem('xo_witnesses')) || [];
+
+    const channel = supabaseClient.channel('xo-global', { 
+        config: { broadcast: { self: true }, presence: { key: myID } } 
+    });
+
+    function save() {
+        localStorage.setItem('xo_id', myID);
+        localStorage.setItem('xo_bal', balance);
+        localStorage.setItem('xo_last_active', lastActive);
+        localStorage.setItem('xo_witnesses', JSON.stringify(witnesses));
+        updateUI();
+    }
 
     function updateUI() {
         document.getElementById('balance').innerText = Math.floor(balance);
-        localStorage.setItem('xo_bal', balance);
+        document.getElementById('display-id').innerText = myID;
+        renderWitnesses();
+        applyEntropy();
     }
 
-    function downloadBackup() {
-        const data = {
-            id: myID,
-            balance: balance,
-            timestamp: new Date().toISOString(),
-            info: "XO Network Backup - Förvara säkert"
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `xo_backup_${myID}.json`;
-        a.click();
-        alert("Säkerhetskopia nedladdad! Spara den på ett säkert ställe.");
+    // --- ENTROPI (HÄLSA) ---
+    function applyEntropy() {
+        const hoursPassed = (Date.now() - lastActive) / (1000 * 60 * 60);
+        const health = Math.max(0, 100 - (hoursPassed * 0.5)).toFixed(1); // 0.5% rost per timme
+        document.getElementById('rust-percent').innerText = health + "%";
+        document.getElementById('rust-bar').style.width = health + "%";
     }
 
-    // --- GRID LOGIK ---
-    channel.on('broadcast', { event: 'new-task' }, ({ payload }) => {
+    // --- SOCIAL TILLIT (SIGNERING) ---
+    function signNeighbor() {
+        const target = document.getElementById('target-id').value.trim().toUpperCase();
+        if(!target || target === myID) return alert("Ange ett giltigt ID (inte ditt eget)");
+        
+        channel.send({
+            type: 'broadcast',
+            event: 'witness-event',
+            payload: { from: myID, to: target, timestamp: Date.now() }
+        });
+        
+        alert("Signatur skickad till " + target + "!");
+        document.getElementById('target-id').value = "";
+        lastActive = Date.now(); // Att lita på någon ger dig hälsa!
+        save();
+    }
+
+    function renderWitnesses() {
+        const container = document.getElementById('witness-list-container');
+        if(witnesses.length === 0) return;
+        
+        container.innerHTML = witnesses.map(w => `
+            <div class="witness-item">
+                <div class="witness-avatar">${w.substring(3,5)}</div>
+                <div><strong>${w}</strong> har bekräftat din tillit.</div>
+            </div>
+        `).join('');
+    }
+
+    // --- NÄTVERKSLYSSNARE ---
+    channel
+    .on('presence', { event: 'sync' }, () => {
+        const count = Object.keys(channel.presenceState()).length;
+        document.getElementById('node-badge').innerText = count + " ONLINE";
+        document.getElementById('node-badge').style.background = "#e3f9e5";
+    })
+    .on('broadcast', { event: 'witness-event' }, ({ payload }) => {
+        if(payload.to === myID && !witnesses.includes(payload.from)) {
+            witnesses.push(payload.from);
+            lastActive = Date.now(); // Att bli signerad återställer din hälsa!
+            alert("Du har blivit signerad av " + payload.from + "!");
+            save();
+        }
+    })
+    .on('broadcast', { event: 'new-task' }, ({ payload }) => {
         renderTask(payload);
-    }).subscribe();
+    })
+    .subscribe();
 
+    // --- GRID & ÖVRIGT ---
     function sendTask() {
         const input = document.getElementById('task-input');
         if (!input.value) return;
         channel.send({ type: 'broadcast', event: 'new-task', payload: { title: input.value, from: myID, id: Date.now() } });
         input.value = "";
+        lastActive = Date.now();
+        save();
     }
 
     function renderTask(data) {
@@ -145,7 +199,7 @@
         const el = document.createElement('div');
         el.className = 'card';
         el.style.padding = '15px';
-        el.innerHTML = `<strong>${data.from}:</strong> ${data.title}`;
+        el.innerHTML = `<strong style="color:var(--xo-pink)">${data.from}:</strong> ${data.title}`;
         container.prepend(el);
     }
 
@@ -156,7 +210,17 @@
         document.getElementById('nav-'+v).classList.add('active');
     }
 
+    function downloadBackup() {
+        const data = { id: myID, bal: balance, witnesses: witnesses, secret: "XO_V10" };
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `XO_Vault_${myID}.json`;
+        a.click();
+    }
+
     updateUI();
+    setInterval(applyEntropy, 60000); // Uppdatera rosten varje minut
 </script>
 </body>
 </html>
