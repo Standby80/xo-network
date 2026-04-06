@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v14.1</title>
+    <title>XO Network - v15.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f4f7f6; --xo-white: #ffffff; }
+        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f4f7f6; --xo-white: #ffffff; --xo-green: #2ecc71; }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -27,34 +27,33 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 
-        /* Wallet Cards */
+        /* UI Elements */
         .card { background: var(--xo-white); border-radius: 30px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
         .balance-val { font-size: 4rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -3px; }
         
-        /* Status Header */
         .status-area { background: #2d3436; padding: 14px; border-radius: 20px; color: #fff; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 10px #2ecc71; display: inline-block; margin-right: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--xo-green); box-shadow: 0 0 10px var(--xo-green); display: inline-block; margin-right: 6px; }
 
-        /* Buttons */
-        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
+        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn:active { transform: scale(0.98); }
         .btn-dark { background: #444; color: #fff; }
-        .btn-outline { background: transparent; border: 2px solid #eee; color: #888; }
+        .btn-small { padding: 8px 12px; font-size: 0.7rem; border-radius: 12px; width: auto; }
         
-        /* Modal/Overlay for QR */
+        /* Lists */
+        .item-card { background: #fff; border-radius: 22px; padding: 18px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 5px 15px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; }
+        .tag { font-size: 0.6rem; padding: 4px 8px; background: #eee; border-radius: 8px; text-transform: uppercase; font-weight: bold; }
+        
+        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
+
         #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; }
         #reader { width: 100%; max-width: 350px; border-radius: 20px; overflow: hidden; background: white; }
-        #qr-canvas-container { background: white; padding: 20px; border-radius: 25px; min-width: 300px; }
-
-        .task-card { background: #fff; border-radius: 22px; padding: 18px; margin-bottom: 15px; border-left: 6px solid var(--xo-pink); box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
-        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="status-area">
-        <div><span id="status-dot" class="dot"></span><span id="net-text">NÄTVERK SÄKRAT</span></div>
+        <div><span id="status-dot" class="dot"></span><span id="net-text">XO NÄTVERK</span></div>
         <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">0 ONLINE</div>
     </div>
 
@@ -74,38 +73,49 @@
         </div>
         
         <div class="card" style="background:#2d3436; color:white;">
-            <h4 style="margin:0 0 15px;">Backup & Säkerhet</h4>
-            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">
-                💾 EXPORTERA PLÅNBOK
-            </button>
-            
-            <label class="btn btn-dark" style="margin-top:10px; font-size:0.75rem; border: 1px solid #555; cursor:pointer;">
-                📥 ÅTERSTÄLL FRÅN FIL
-                <input type="file" id="restore-file" style="display:none;" onchange="restoreBackup(event)">
-            </label>
+            <h4 style="margin:0 0 15px;">Backup</h4>
+            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">💾 EXPORTERA</button>
         </div>
     </div>
 
     <div id="view-grid" class="view">
         <h3 style="margin-bottom:15px;">Griden 🌍</h3>
         <div id="grid-container"></div>
-        <div class="card" style="border-style: dashed; background: transparent;">
+        <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
             <input type="text" id="grid-input" placeholder="Vad händer i byn?">
-            <button class="btn" onclick="sendToDatabase()">PUBLICERA</button>
+            <button class="btn" onclick="postToGrid()">PUBLICERA</button>
         </div>
     </div>
 
-    <div id="view-family" class="view"><h3>Familjen 🧸</h3><div class="card">Hushållslogg kommer snart...</div></div>
-    <div id="view-market" class="view"><h3>Torget 🏪</h3><div class="card">Lokala erbjudanden kommer snart...</div></div>
+    <div id="view-family" class="view">
+        <h3>Familjen 🧸</h3>
+        <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;">Logga gemensamma insatser i hushållet.</p>
+        <div id="family-log"></div>
+        <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
+            <input type="text" id="family-task" placeholder="T.ex. Köpt mjölk eller Dammsugit">
+            <input type="number" id="family-val" placeholder="XO Värde" style="width: 100px;">
+            <button class="btn btn-dark" onclick="logFamilyAction()">LOGGA SYSSLA</button>
+        </div>
+    </div>
+
+    <div id="view-market" class="view">
+        <h3>Torget 🏪</h3>
+        <div id="market-container"></div>
+        <div class="card" style="border: 2px solid var(--xo-pink); background: #fff5f9;">
+            <h4 style="margin-top:0;">Skapa Erbjudande</h4>
+            <input type="text" id="market-title" placeholder="Vad erbjuder du?">
+            <input type="text" id="market-price" placeholder="Pris (t.ex. 50 XO eller 'Bulle')">
+            <button class="btn" onclick="postToMarket()">LÄGG UT PÅ TORGET</button>
+        </div>
+    </div>
 </div>
 
 <div id="qr-overlay" onclick="closeQR()">
-    <div id="qr-canvas-container" onclick="event.stopPropagation()">
+    <div style="background: white; padding: 25px; border-radius: 30px; min-width: 300px;" onclick="event.stopPropagation()">
         <div id="reader"></div> 
         <div id="qrcode" style="display: flex; justify-content: center;"></div> 
-        <h3 id="qr-title" style="color:#333; text-align:center; margin-top:15px; font-size: 1.1rem;">Skanna</h3>
-        <p id="qr-desc" style="color:#666; text-align:center; font-size:0.75rem;">Klicka utanför för att stänga</p>
-        <button class="btn btn-dark" style="margin-top:15px;" onclick="closeQR()">STÄNG</button>
+        <h3 id="qr-title" style="color:#333; text-align:center; margin-top:15px;">Skanna</h3>
+        <button class="btn btn-dark" onclick="closeQR()">STÄNG</button>
     </div>
 </div>
 
@@ -123,81 +133,72 @@
     
     let myID = localStorage.getItem('xo_id') || 'XO-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
+    let familyLog = JSON.parse(localStorage.getItem('xo_family')) || [];
     let lastActive = Date.now();
     localStorage.setItem('xo_id', myID);
 
-    const channel = supabaseClient.channel('xo-global-v14', { config: { broadcast: { self: true }, presence: { key: myID } } });
+    const channel = supabaseClient.channel('xo-global-v15', { config: { presence: { key: myID } } });
 
-    // --- QR & TRANSACTION ---
-    function showReceiveQR() {
-        const qrDiv = document.getElementById('qrcode');
-        qrDiv.innerHTML = "";
-        document.getElementById('reader').style.display = "none";
-        qrDiv.style.display = "block";
-        document.getElementById('qr-overlay').style.display = "flex";
-        document.getElementById('qr-title').innerText = "Ditt Mottagar-ID";
-        new QRCode(qrDiv, { text: "XO_ADDR_" + myID, width: 220, height: 220 });
+    // --- LOGIK: FAMILJEN ---
+    function logFamilyAction() {
+        const task = document.getElementById('family-task').value;
+        const val = document.getElementById('family-val').value;
+        if(!task) return;
+        
+        const entry = { id: Date.now(), task, val, author: myID, timestamp: new Date().toLocaleTimeString() };
+        familyLog.unshift(entry);
+        localStorage.setItem('xo_family', JSON.stringify(familyLog));
+        renderFamily();
+        document.getElementById('family-task').value = "";
     }
 
-    let html5QrCode;
-    function openScanner() {
-        document.getElementById('qrcode').style.display = "none";
-        document.getElementById('reader').style.display = "block";
-        document.getElementById('qr-overlay').style.display = "flex";
-        document.getElementById('qr-title').innerText = "Rikta kameran";
-
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
-            handleScannedCode(decodedText);
-            closeQR();
-        });
+    function renderFamily() {
+        const container = document.getElementById('family-log');
+        container.innerHTML = familyLog.map(f => `
+            <div class="item-card">
+                <div>
+                    <div class="tag">Syssla</div>
+                    <div style="font-weight:bold; margin-top:5px;">${f.task}</div>
+                    <div style="font-size:0.6rem; color:#999;">${f.timestamp} av ${f.author}</div>
+                </div>
+                <div style="color:var(--xo-pink); font-weight:800;">+${f.val}</div>
+            </div>
+        `).join('');
     }
 
-    function handleScannedCode(text) {
-        if (text.startsWith("XO_ADDR_")) {
-            const targetID = text.replace("XO_ADDR_", "");
-            const amount = prompt("Hur mycket XO vill du skicka till " + targetID + "?", "50");
-            if (amount && balance >= parseFloat(amount)) {
-                balance -= parseFloat(amount);
-                channel.send({ type: 'broadcast', event: 'transfer', payload: { to: targetID, from: myID, amount: amount } });
-                updateUI();
-                alert("Överfört " + amount + " XO!");
-            } else { alert("Saldot räcker inte!"); }
-        }
-    }
-
-    function closeQR() {
-        if (html5QrCode) { html5QrCode.stop().catch(() => {}); html5QrCode = null; }
-        document.getElementById('qr-overlay').style.display = "none";
-    }
-
-    // --- SYSTEM & DB ---
-    channel.on('presence', { event: 'sync' }, () => {
-        document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
-    })
-    .on('broadcast', { event: 'transfer' }, ({ payload }) => {
-        if (payload.to === myID) {
-            balance += parseFloat(payload.amount);
-            updateUI();
-            alert("Du tog emot " + payload.amount + " XO!");
-        }
-    })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => renderTask(payload.new))
-    .subscribe();
-
-    async function sendToDatabase() {
+    // --- LOGIK: TORGET & GRIDEN ---
+    async function postToGrid() {
         const input = document.getElementById('grid-input');
         if(!input.value) return;
-        await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID }]);
+        await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID, type: 'grid' }]);
         input.value = "";
     }
 
-    function renderTask(t) {
-        const container = document.getElementById('grid-container');
+    async function postToMarket() {
+        const title = document.getElementById('market-title').value;
+        const price = document.getElementById('market-price').value;
+        if(!title) return;
+        await supabaseClient.from('tasks').insert([{ title: `${title} (${price})`, author_id: myID, type: 'market' }]);
+        document.getElementById('market-title').value = "";
+        document.getElementById('market-price').value = "";
+    }
+
+    function renderItem(t) {
+        const container = t.type === 'market' ? document.getElementById('market-container') : document.getElementById('grid-container');
+        if(!container) return;
         const el = document.createElement('div');
-        el.className = 'task-card';
-        el.innerHTML = `<strong>${t.author_id}:</strong> ${t.title}`;
+        el.className = 'item-card';
+        el.innerHTML = `<div><strong>${t.author_id}:</strong> ${t.title}</div><button class="btn btn-dark btn-small" onclick="alert('Kontaktar...')">SVAR</button>`;
         container.prepend(el);
+    }
+
+    // --- CORE SYSTEM ---
+    function switchView(v) {
+        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+        document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
+        if(v === 'family') renderFamily();
     }
 
     function updateUI() {
@@ -208,39 +209,51 @@
         document.getElementById('rust-bar').style.width = Math.max(0, 100 - (hours * 0.5)) + "%";
     }
 
-    function switchView(v) {
-        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-        document.getElementById('view-'+v).classList.add('active');
-        document.getElementById('nav-'+v).classList.add('active');
+    // QR & Supabase Connect (Samma som v14.1 men med renderItem-stöd)
+    // ... [QR LOGIK HÄR] ...
+    function showReceiveQR() {
+        const qrDiv = document.getElementById('qrcode');
+        qrDiv.innerHTML = "";
+        document.getElementById('reader').style.display = "none";
+        qrDiv.style.display = "block";
+        document.getElementById('qr-overlay').style.display = "flex";
+        new QRCode(qrDiv, { text: "XO_ADDR_" + myID, width: 220, height: 220 });
     }
 
-    function downloadBackup() {
-        const blob = new Blob([JSON.stringify({ id: myID, bal: balance })], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `XO_${myID}.json`; a.click();
-    }
-
-    function restoreBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if(data.id) {
-                    myID = data.id; balance = data.bal;
-                    localStorage.setItem('xo_id', myID); localStorage.setItem('xo_bal', balance);
-                    updateUI(); alert("Plånbok återställd!"); location.reload();
+    let html5QrCode;
+    function openScanner() {
+        document.getElementById('qrcode').style.display = "none";
+        document.getElementById('reader').style.display = "block";
+        document.getElementById('qr-overlay').style.display = "flex";
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            if (text.startsWith("XO_ADDR_")) {
+                const targetID = text.replace("XO_ADDR_", "");
+                const amount = prompt("XO att skicka till " + targetID + "?", "50");
+                if (amount && balance >= parseFloat(amount)) {
+                    balance -= parseFloat(amount);
+                    channel.send({ type: 'broadcast', event: 'transfer', payload: { to: targetID, from: myID, amount: amount } });
+                    updateUI();
                 }
-            } catch(err) { alert("Felaktig fil."); }
-        };
-        reader.readAsText(file);
+            }
+            closeQR();
+        });
     }
+
+    function closeQR() { if (html5QrCode) { html5QrCode.stop().catch(()=>{}); html5QrCode = null; } document.getElementById('qr-overlay').style.display = "none"; }
+
+    channel.on('presence', { event: 'sync' }, () => {
+        document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
+    }).on('broadcast', { event: 'transfer' }, ({ payload }) => {
+        if (payload.to === myID) { balance += parseFloat(payload.amount); updateUI(); alert("Mottog " + payload.amount + " XO!"); }
+    }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, p => renderItem(p.new)).subscribe();
 
     supabaseClient.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
-        if(data) data.forEach(renderTask);
+        if(data) data.forEach(renderItem);
     });
+
     updateUI();
+    renderFamily();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
