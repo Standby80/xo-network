@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v12.2</title>
+    <title>XO Network - v12.3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f4f7f6; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 100px; color: var(--xo-dark); overflow-x: hidden; }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 110px; color: var(--xo-dark); overflow-x: hidden; }
         
         .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; border-top: 1px solid #eee; }
@@ -44,7 +44,7 @@
 
     <div id="view-wallet" class="view active">
         <div class="card">
-            <span style="font-size:0.6rem; font-weight:900; color:#bbb;">SOCIAL KRAFT</span>
+            <span style="font-size:0.6rem; font-weight:900; color:#bbb;">DIN KRAFT</span>
             <div class="balance-val" id="balance">1000</div>
             <div class="progress-container"><div id="rust-bar" class="progress-fill" style="width: 100%;"></div></div>
             <div style="display:flex; justify-content: space-between; font-size: 0.55rem; color: #aaa;">
@@ -87,10 +87,10 @@
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
-    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
-    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
-    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torg</div>
+    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')">Plånbok</div>
+    <div class="nav-item" id="nav-grid" onclick="switchView('grid')">Griden</div>
+    <div class="nav-item" id="nav-family" onclick="switchView('family')">Familj</div>
+    <div class="nav-item" id="nav-market" onclick="switchView('market')">Torg</div>
 </div>
 
 <script>
@@ -103,14 +103,15 @@
     let lastActive = parseInt(localStorage.getItem('xo_last_active')) || Date.now();
     localStorage.setItem('xo_id', myID);
 
-    // --- REALTID & ANSLUTNING ---
+    // --- REALTIME & STATUS ---
     const channel = supabaseClient.channel('xo-global', {
         config: { presence: { key: myID } }
     });
 
     channel
     .on('presence', { event: 'sync' }, () => {
-        const count = Object.keys(channel.presenceState()).length;
+        const state = channel.presenceState();
+        const count = Object.keys(state).length;
         document.getElementById('node-count').innerText = count + " ONLINE";
         document.getElementById('dot').className = "dot online";
         document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
@@ -118,25 +119,38 @@
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => {
         renderTask(payload.new);
     })
-    .subscribe();
+    .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+            await channel.track({ online_at: new Date().toISOString() });
+        }
+    });
 
     // --- DATABAS FUNKTIONER ---
     async function loadTasks() {
-        const { data, error } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: true });
-        if (data) {
-            document.getElementById('grid-container').innerHTML = "";
-            data.forEach(task => renderTask(task));
+        try {
+            const { data, error } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: true });
+            if (data) {
+                document.getElementById('grid-container').innerHTML = "";
+                data.forEach(task => renderTask(task));
+            }
+            if (error) throw error;
+        } catch (err) {
+            console.error("Laddningsfel:", err.message);
         }
     }
 
     async function sendToDatabase() {
         const input = document.getElementById('grid-input');
         if(!input.value) return;
-        const { error } = await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID }]);
-        if(error) alert("Kunde inte publicera: " + error.message);
-        input.value = "";
-        lastActive = Date.now();
-        updateUI();
+        try {
+            const { error } = await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID }]);
+            if(error) throw error;
+            input.value = "";
+            lastActive = Date.now();
+            updateUI();
+        } catch (err) {
+            alert("Kunde inte publicera: " + err.message);
+        }
     }
 
     function renderTask(task) {
@@ -149,7 +163,7 @@
         container.prepend(el);
     }
 
-    // --- UI & SYSTEM ---
+    // --- UI SYSTEM ---
     function updateUI() {
         document.getElementById('balance').innerText = Math.floor(balance);
         document.getElementById('display-id').innerText = myID;
@@ -168,7 +182,6 @@
         document.getElementById('nav-'+v).classList.add('active');
     }
 
-    // --- BACKUP & ÅTERSTÄLLNING ---
     function downloadBackup() {
         const data = { id: myID, bal: balance };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -183,14 +196,16 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
-            const data = JSON.parse(e.target.result);
-            if(data.id) {
-                myID = data.id; balance = data.bal;
-                localStorage.setItem('xo_id', myID);
-                updateUI();
-                alert("Plånbok återställd!");
-                location.reload();
-            }
+            try {
+                const data = JSON.parse(e.target.result);
+                if(data.id) {
+                    myID = data.id; balance = data.bal;
+                    localStorage.setItem('xo_id', myID);
+                    updateUI();
+                    alert("Återställd!");
+                    location.reload();
+                }
+            } catch(err) { alert("Felaktig backup-fil."); }
         };
         reader.readAsText(file);
     }
