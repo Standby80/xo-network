@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v4.8</title>
+    <title>XO Network - v4.9</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -19,12 +19,12 @@
         .view.active { display: block; }
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
         .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; color: #333; }
-        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
         .btn-main { background: var(--xo-pink); color: white; }
         .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .status-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #eee; padding: 8px 15px; border-radius: 12px; font-size: 0.65rem; font-weight: bold; color: #666; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; display: inline-block; margin-right: 5px; }
-        .online-dot { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        .status-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #2d3436; padding: 10px 15px; border-radius: 15px; font-size: 0.65rem; font-weight: bold; color: #fff; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
+        .online-dot { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
     </style>
 </head>
 <body>
@@ -45,16 +45,18 @@
 
     <div id="view-grid" class="view">
         <div class="status-area">
-            <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
-            <div><span style="color:var(--xo-pink)">●</span> <span id="online-count">1</span> ONLINE JUST NU</div>
+            <div><span id="dot" class="dot"></span><span id="net-text">SÖKER...</span></div>
+            <div><span id="online-count" style="color:var(--xo-pink); font-size: 1rem;">1</span> <span style="opacity: 0.7;">AKTIVA NODER</span></div>
         </div>
         
         <div id="task-container"></div>
 
         <div class="card" style="margin-top: 20px; border-style: dashed; background: #fafafa;">
             <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box;">
-            <button class="btn btn-main" style="margin:0;" onclick="postTask()">PUBLICERA PÅ GRIDEN</button>
+            <button class="btn btn-main" style="margin:0;" onclick="postTask()">SKICKA TILL GRIDEN</button>
         </div>
+        
+        <button onclick="location.reload()" style="background:none; border:none; color:#ccc; font-size:0.6rem; margin-top:20px; width:100%;">TVINGA NY ANSLUTNING (SYNC)</button>
     </div>
 
 </div>
@@ -65,21 +67,24 @@
 </div>
 
 <script>
-    // --- KONFIGURATION ---
+    // --- KRAFTFULLARE NOD-UPPSÄTTNING ---
     const gun = Gun({
         peers: [
             'https://gun-manhattan.herokuapp.com/gun',
             'https://relay.peer.ooo/gun',
-            'https://gun-us.herokuapp.com/gun'
+            'https://gun-us.herokuapp.com/gun',
+            'https://gunjs.herokuapp.com/gun'
         ],
-        localStorage: true
+        localStorage: true,
+        retry: 1000 // Försök igen snabbare om det bryts
     });
 
-    const grid = gun.get('xo_world_grid_v4_8');
-    const presence = gun.get('xo_presence_v4_8');
+    // NY KANAL FÖR ATT UNDVIKA GAMMAL DATA
+    const worldGrid = gun.get('xo_mesh_v4_9_final');
+    const heartbeats = gun.get('xo_heartbeat_v4_9');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let myID = localStorage.getItem('xo_peer_id') || 'User_' + Math.random().toString(36).substr(2, 4);
+    let myID = localStorage.getItem('xo_peer_id') || 'Node_' + Math.random().toString(36).substr(2, 4);
     localStorage.setItem('xo_peer_id', myID);
 
     function save() {
@@ -87,37 +92,44 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    // --- HEARTBEAT / ONLINE RÄKNARE ---
-    // Skicka "Jag lever" var 5:e sekund
+    // --- HEARTBEAT LOGIK ---
     setInterval(() => {
-        presence.get(myID).put({ time: Date.now() });
-    }, 5000);
+        heartbeats.get(myID).put({ lastSeen: Date.now() });
+    }, 3000); // Skicka oftare för snabbare upptäckt
 
-    // Räkna hur många som "lever" (uppdaterat senaste 15 sek)
-    let activeUsers = {};
-    presence.map().on((data, id) => {
-        if (data && data.time > Date.now() - 15000) {
-            activeUsers[id] = true;
+    let activeNodes = {};
+    heartbeats.map().on((data, id) => {
+        if (data && data.lastSeen > Date.now() - 10000) {
+            activeNodes[id] = true;
         } else {
-            delete activeUsers[id];
+            delete activeNodes[id];
         }
-        document.getElementById('online-count').innerText = Object.keys(activeUsers).length;
+        const count = Object.keys(activeNodes).length;
+        document.getElementById('online-count').innerText = count;
+        
+        // Om vi ser mer än oss själva, bekräfta i texten
+        if(count > 1) {
+            document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT (MESH)";
+        }
     });
 
     gun.on('hi', () => {
         document.getElementById('dot').className = "dot online-dot";
-        document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
+        if(Object.keys(activeNodes).length <= 1) {
+            document.getElementById('net-text').innerText = "ONLINE (ENSAM)";
+        }
     });
 
     // --- GRID LOGIK ---
     function postTask() {
         const val = document.getElementById('task-input').value;
         if(!val) return;
-        grid.get(Date.now()).put({ title: val, from: myID, status: 'open' });
+        // Vi sparar med tidsstämpel som nyckel för att sortera
+        worldGrid.get('T_'+Date.now()).put({ title: val, from: myID, status: 'open' });
         document.getElementById('task-input').value = "";
     }
 
-    grid.map().on((data, id) => {
+    worldGrid.map().on((data, id) => {
         if(!data || data.status !== 'open' || document.getElementById(id)) return;
         const el = document.createElement('div');
         el.id = id;
@@ -128,7 +140,7 @@
 
     function claim(id) {
         if(confirm("Hjälpa till?")) {
-            grid.get(id).put({ status: 'claimed' });
+            worldGrid.get(id).put({ status: 'claimed' });
             document.getElementById(id).remove();
         }
     }
