@@ -3,113 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v6.2</title>
+    <title>XO Network - v6.3</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-        .view { display: none; }
-        .view.active { display: block; }
-        .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
-        .online-dot { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; background: var(--xo-pink); color: white; }
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; display: inline-block; margin-right: 5px; box-shadow: 0 0 10px #2ecc71; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="view-wallet" class="view active">
-        <div class="card">
-            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem;">XO CORE</div>
-            <div id="balance" style="font-size: 3.5rem; font-weight: 800; text-align: center;">1000</div>
-        </div>
-        <button onclick="switchView('grid')" style="width:100%; padding:16px; border-radius:18px; border:none; background:var(--xo-pink); color:white; font-weight:700;">GÅ TILL GRIDEN</button>
-    </div>
-
-    <div id="view-grid" class="view">
+    <div id="view-grid">
         <div class="status-area">
-            <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
-            <div><span id="online-count" style="color:var(--xo-pink); font-size: 1rem; font-weight: 900;">1</span> NODER</div>
+            <div><span class="dot"></span>MESH AKTIV</div>
+            <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">1 NODER ONLINE</div>
         </div>
-        
+
+        <div class="card" style="background: #fff0f6; border: 1px solid var(--xo-pink);">
+            <p style="margin:0 0 10px; font-size: 0.7rem; font-weight: bold;">1. SKRIV SAMMA RUMS-KOD PÅ ALLA MOBILER:</p>
+            <input type="text" id="room-id" placeholder="Ex: BYN123" oninput="connectToRoom()" style="margin:0; border-color: var(--xo-pink);">
+            <p id="my-id" style="font-size: 0.5rem; color: #999; margin-top: 5px;"></p>
+        </div>
+
         <div id="task-container"></div>
 
-        <div class="card" style="margin-top: 10px; border-style: dashed; background: #fafafa;">
-            <input type="text" id="task-input" placeholder="Vad behövs?">
-            <button onclick="postTask()" style="width:100%; padding:12px; border-radius:12px; border:none; background:var(--xo-pink); color:white; font-weight:700;">LÄGG UPP</button>
+        <div class="card">
+            <p style="margin:0 0 10px; font-size: 0.7rem; font-weight: bold;">2. SKAPA UPPGIFT:</p>
+            <input type="text" id="task-input" placeholder="Vad behövs hjälp med?">
+            <button class="btn" onclick="postTask()">PUBLICERA</button>
         </div>
-        
-        <p style="font-size:0.6rem; color:#999; text-align:center;">Tips: Om det inte synkar, skriv samma ord i rutan på båda enheterna.</p>
     </div>
-</div>
-
-<div class="nav-bar">
-    <div onclick="switchView('wallet')" style="cursor:pointer">Plånbok</div>
-    <div onclick="switchView('grid')" style="cursor:pointer">Griden</div>
 </div>
 
 <script>
-    // --- VI ANVÄNDER FLERA RELÄER SAMTIDIGT ---
+    // Vi använder de tre mest stabila reläerna för 2026
     const gun = Gun({
         peers: [
             'https://gun-manhattan.herokuapp.com/gun',
             'https://relay.peer.ooo/gun',
-            'https://gun-us.herokuapp.com/gun',
-            'https://dletta.herokuapp.com/gun'
-        ],
-        localStorage: false
+            'https://gun-us.herokuapp.com/gun'
+        ]
     });
 
-    const myID = 'N-' + Math.random().toString(36).substr(2, 3);
-    const taskDB = gun.get('xo_universal_v6_2');
-    const nodeDB = gun.get('xo_presence_v6_2');
+    const myID = 'ID-' + Math.random().toString(36).substr(2, 3);
+    document.getElementById('my-id').innerText = "Ditt lokala ID: " + myID;
 
-    // Heartbeat - skicka att jag lever
-    setInterval(() => { nodeDB.get(myID).put({ ts: Date.now() }); }, 4000);
-
-    // Lyssna på närvaro
+    let currentRoom = null;
     let nodes = {};
-    nodeDB.map().on((data, id) => {
-        if(data && data.ts > Date.now() - 15000) nodes[id] = true;
-        else delete nodes[id];
-        const count = Object.keys(nodes).length;
-        document.getElementById('online-count').innerText = count;
-        if(count > 1) {
-            document.getElementById('dot').className = 'dot online-dot';
-            document.getElementById('net-text').innerText = 'MESH AKTIV';
-        }
-    });
 
-    gun.on('hi', () => { 
-        if(Object.keys(nodes).length <= 1) document.getElementById('net-text').innerText = 'RELÄ KONTAKTAT';
-        document.getElementById('dot').className = 'dot online-dot';
-    });
+    function connectToRoom() {
+        const roomName = document.getElementById('room-id').value.trim();
+        if(roomName.length < 3) return;
 
-    // --- GRID FUNKTIONER ---
-    function postTask() {
-        const val = document.getElementById('task-input').value;
-        if(!val) return;
-        taskDB.get('T'+Date.now()).put({ title: val, from: myID, status: 'open' });
-        document.getElementById('task-input').value = "";
+        // Rensa gamla visningar om vi byter rum
+        document.getElementById('task-container').innerHTML = "";
+        nodes = {}; 
+        
+        // Skapa en specifik "kanal" för detta rum
+        currentRoom = gun.get('xo_room_' + roomName);
+        
+        // Heartbeat - Berätta att vi är i detta rum
+        setInterval(() => {
+            currentRoom.get('presence').get(myID).put({ ts: Date.now() });
+        }, 3000);
+
+        // Lyssna på andra i samma rum
+        currentRoom.get('presence').map().on((data, id) => {
+            if(data && data.ts > Date.now() - 10000) nodes[id] = true;
+            else delete nodes[id];
+            document.getElementById('node-count').innerText = Object.keys(nodes).length + " NODER ONLINE";
+        });
+
+        // Lyssna på uppgifter i rummet
+        currentRoom.get('tasks').map().on((data, id) => {
+            if(!data || data.status !== 'open' || document.getElementById(id)) return;
+            const el = document.createElement('div');
+            el.id = id;
+            el.className = 'task-card';
+            el.innerHTML = `<div><h4 style="margin:0">${data.title}</h4><p style="margin:0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p></div>`;
+            document.getElementById('task-container').prepend(el);
+        });
     }
 
-    taskDB.map().on((data, id) => {
-        if(!data || data.status !== 'open' || document.getElementById(id)) return;
-        const el = document.createElement('div');
-        el.id = id;
-        el.className = 'task-card';
-        el.innerHTML = `<div><h4 style="margin:0">${data.title}</h4><p style="margin:0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p></div>`;
-        document.getElementById('task-container').prepend(el);
-    });
-
-    function switchView(v) {
-        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
-        document.getElementById('view-'+v).classList.add('active');
+    function postTask() {
+        if(!currentRoom) return alert("Skriv in en Rums-kod först!");
+        const val = document.getElementById('task-input').value;
+        if(!val) return;
+        currentRoom.get('tasks').get('T'+Date.now()).put({ title: val, from: myID, status: 'open' });
+        document.getElementById('task-input').value = "";
     }
 </script>
 </body>
