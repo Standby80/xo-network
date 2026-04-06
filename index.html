@@ -3,52 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v11.0</title>
+    <title>XO Network - v11.5 Arkivet</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f4f7f6; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 100px; color: var(--xo-dark); overflow-x: hidden; }
-        
-        /* Layout & Nav */
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 100px; color: var(--xo-dark); }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; border-top: 1px solid #eee; }
-        .nav-item { font-size: 0.65rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
-        .nav-item.active { color: var(--xo-pink); transform: translateY(-5px); }
-        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
-
-        /* Views */
+        .nav-item { font-size: 0.65rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; }
+        .nav-item.active { color: var(--xo-pink); }
         .view { display: none; animation: fadeIn 0.4s ease; }
         .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Cards */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .card { background: var(--xo-white); border-radius: 28px; padding: 22px; box-shadow: 0 8px 25px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
-        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -2px; }
-        
-        /* Stats & Labels */
-        .label-tiny { font-size: 0.6rem; font-weight: 900; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
-        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .stat-box { background: #fafafa; padding: 12px; border-radius: 18px; text-align: center; border: 1px solid #f0f0f0; }
-        .stat-num { font-weight: 800; font-size: 1.1rem; display: block; color: var(--xo-pink); }
-
-        /* Progress Bar (Entropy) */
-        .progress-container { height: 8px; background: #eee; border-radius: 10px; margin: 12px 0; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--xo-pink); transition: width 0.8s ease; }
-
-        /* Grid Tasks */
-        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
-        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 0.7rem; font-weight: bold; white-space: nowrap; }
-        .filter-btn.active { background: var(--xo-pink); color: white; border-color: var(--xo-pink); }
-        
+        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; }
         .task-card { background: #fff; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 5px solid var(--xo-pink); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .tag { font-size: 0.5rem; padding: 3px 8px; border-radius: 10px; background: #eee; font-weight: bold; vertical-align: middle; margin-left: 5px; }
-
-        /* Inputs & Buttons */
-        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; }
         .btn-main { background: var(--xo-pink); color: white; }
-        .btn-dark { background: var(--xo-dark); color: white; }
-        input { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+        input { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; }
+        .label-tiny { font-size: 0.6rem; font-weight: 900; color: #bbb; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -57,184 +31,96 @@
     
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div style="display: flex; justify-content: space-between;">
-                <span class="label-tiny">Social Kraft</span>
-                <span id="node-status" style="font-size: 0.5rem; color: #2ecc71; font-weight: 800;">● 1 ONLINE</span>
-            </div>
+            <span class="label-tiny">Ditt Saldo</span>
             <div class="balance-val" id="balance">1000</div>
-            <div class="progress-container"><div id="rust-bar" class="progress-fill" style="width: 100%;"></div></div>
-            <div style="display:flex; justify-content: space-between; font-size: 0.55rem; color: #aaa; font-weight: 800;">
-                <span>ENTROPI (ROST)</span>
-                <span id="rust-text">100% FRISK</span>
-            </div>
+            <p style="font-size: 0.6rem; color: #aaa; text-align:center;">ID: <strong id="display-id">...</strong></p>
         </div>
-
-        <div class="stats-row">
-            <div class="stat-box"><span class="stat-num" id="stats-helped">0</span><span class="label-tiny">Gett hjälp</span></div>
-            <div class="stat-box"><span class="stat-num" id="stats-asked">0</span><span class="label-tiny">Fått hjälp</span></div>
-        </div>
-
-        <div class="card" style="background: #2d3436; color: white;">
-            <span class="label-tiny" style="color: var(--xo-pink);">Säkerhet</span>
-            <p style="font-size: 0.7rem; opacity: 0.8; margin: 10px 0 15px;">Ditt ID: <strong id="display-id">...</strong></p>
-            <button class="btn btn-main" style="font-size: 0.7rem; padding: 10px;" onclick="downloadBackup()">💾 BACKUP PLÅNBOK</button>
+        <div class="card" style="background:#2d3436; color:white;">
+            <h4 style="margin:0 0 10px;">Byns Arkiv</h4>
+            <p style="font-size:0.7rem; opacity:0.8;">Alla uppdrag sparas nu i molnet och finns kvar för alltid.</p>
         </div>
     </div>
 
     <div id="view-grid" class="view">
-        <div class="filter-bar">
-            <button class="filter-btn active">ALLA</button>
-            <button class="filter-btn">🆘 NÖD</button>
-            <button class="filter-btn">🤝 HJÄLP</button>
-            <button class="filter-btn">🍎 ERBJUDANDE</button>
-            <button class="filter-btn">📢 NYHET</button>
+        <h3 style="margin-top: 0;">Griden 🌍</h3>
+        <div id="grid-container">
+            <p style="text-align:center; color:#ccc; font-size:0.8rem;">Hämtar historik...</p>
         </div>
-        <div id="grid-container"></div>
-        <div class="card" style="border-style: dashed;">
-            <input type="text" id="grid-input" placeholder="Vad vill du dela med byn?">
-            <button class="btn btn-main" onclick="sendToGrid()">PUBLICERA</button>
-        </div>
-    </div>
-
-    <div id="view-family" class="view">
-        <h3 style="margin-top: 0;">Hushålls-logg 🧸</h3>
-        <div class="card">
-            <span class="label-tiny">Dagens Uppdrag</span>
-            <div id="family-tasks" style="margin-top:10px;">
-                <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
-                    <span>Diskmaskinen</span><button class="filter-btn" style="padding:4px 10px;">+10 XO</button>
-                </div>
-                <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
-                    <span>Läxor klara</span><button class="filter-btn" style="padding:4px 10px;">+20 XO</button>
-                </div>
-            </div>
-        </div>
-        <div class="card" style="background: #e3f2fd; border: none;">
-            <span class="label-tiny" style="color: #1976d2;">Gemensamt Mål</span>
-            <h4 style="margin: 10px 0 5px;">Fredagsmys-fond</h4>
-            <div class="progress-container" style="background: rgba(0,0,0,0.05);"><div style="width: 65%; background: #1976d2;" class="progress-fill"></div></div>
-            <p style="font-size: 0.6rem; color: #1976d2; font-weight: bold;">325 / 500 XO INSAMLAT</p>
-        </div>
-    </div>
-
-    <div id="view-market" class="view">
-        <h3 style="margin-top: 0;">Torget 🏪</h3>
-        <div class="card">
-            <div style="display:flex; gap:15px; align-items:center;">
-                <div style="width:50px; height:50px; background:#f0f0f0; border-radius:12px; display:flex; align-items:center; justify-content:center;">☕</div>
-                <div style="flex:1">
-                    <h4 style="margin:0">Byns Café</h4>
-                    <p style="margin:0; font-size:0.7rem; color:#666;">Gratis påtår vid köp</p>
-                </div>
-                <button class="filter-btn" style="background:var(--xo-dark); color:white;">15 XO</button>
-            </div>
-        </div>
-        <div class="card">
-            <div style="display:flex; gap:15px; align-items:center;">
-                <div style="width:50px; height:50px; background:#f0f0f0; border-radius:12px; display:flex; align-items:center; justify-content:center;">🥦</div>
-                <div style="flex:1">
-                    <h4 style="margin:0">Matbutiken</h4>
-                    <p style="margin:0; font-size:0.7rem; color:#666;">10% på valfri vara</p>
-                </div>
-                <button class="filter-btn" style="background:var(--xo-dark); color:white;">50 XO</button>
-            </div>
+        <div class="card" style="border-style: dashed; margin-top:20px;">
+            <input type="text" id="grid-input" placeholder="Vad behövs hjälp med?">
+            <button class="btn btn-main" onclick="sendToDatabase()">PUBLICERA TILL ARKIVET</button>
         </div>
     </div>
 
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
-    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
-    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
-    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
+    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')">💎 Plånbok</div>
+    <div class="nav-item" id="nav-grid" onclick="switchView('grid')">🌍 Griden</div>
 </div>
 
 <script>
-    // --- SUPABASE & DATA ---
     const SUPABASE_URL = 'https://pwittnltsbtojzkhovos.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let myID = localStorage.getItem('xo_id') || 'XO-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let lastActive = parseInt(localStorage.getItem('xo_last_active')) || Date.now();
-    let stats = JSON.parse(localStorage.getItem('xo_stats')) || { helped: 0, asked: 0 };
+    localStorage.setItem('xo_id', myID);
 
-    const channel = supabaseClient.channel('xo-global-v11', { 
-        config: { broadcast: { self: true }, presence: { key: myID } } 
-    });
+    // --- HÄMTA HISTORIK VID START ---
+    async function loadTasks() {
+        const { data, error } = await supabaseClient
+            .from('tasks')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-    function save() {
-        localStorage.setItem('xo_id', myID);
-        localStorage.setItem('xo_bal', balance);
-        localStorage.setItem('xo_last_active', lastActive);
-        localStorage.setItem('xo_stats', JSON.stringify(stats));
-        updateUI();
+        if (data) {
+            document.getElementById('grid-container').innerHTML = "";
+            data.forEach(task => renderTask(task));
+        }
     }
 
-    function updateUI() {
-        document.getElementById('balance').innerText = Math.floor(balance);
-        document.getElementById('display-id').innerText = myID;
-        document.getElementById('stats-helped').innerText = stats.helped;
-        document.getElementById('stats-asked').innerText = stats.asked;
-        
-        // Rost-logik
-        const hours = (Date.now() - lastActive) / (1000 * 60 * 60);
-        const health = Math.max(0, 100 - (hours * 0.2)).toFixed(1);
-        document.getElementById('rust-bar').style.width = health + "%";
-        document.getElementById('rust-text').innerText = health + "% FRISK";
-    }
-
-    // --- GRID LOGIK ---
-    function sendToGrid() {
+    // --- SPARA NYTT UPPDRAG I DATABASEN ---
+    async function sendToDatabase() {
         const input = document.getElementById('grid-input');
         if(!input.value) return;
-        channel.send({
-            type: 'broadcast',
-            event: 'grid-msg',
-            payload: { content: input.value, from: myID, id: Date.now() }
-        });
-        stats.asked++;
-        lastActive = Date.now();
-        input.value = "";
-        save();
+
+        const { error } = await supabaseClient
+            .from('tasks')
+            .insert([{ 
+                title: input.value, 
+                author_id: myID, 
+                category: 'ALLA' 
+            }]);
+
+        if(!error) input.value = "";
     }
 
-    function renderGrid(data) {
-        if(document.getElementById(data.id)) return;
+    function renderTask(task) {
+        if(document.getElementById(task.id)) return;
         const container = document.getElementById('grid-container');
         const el = document.createElement('div');
-        el.id = data.id;
+        el.id = task.id;
         el.className = 'task-card';
         el.innerHTML = `
-            <div style="font-size:0.85rem; font-weight:600;">${data.content}</div>
+            <div style="font-size:0.85rem; font-weight:600;">${task.title}</div>
             <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span class="label-tiny">Från: ${data.from}</span>
-                <button class="filter-btn" style="padding:4px 10px; font-size:0.5rem;" onclick="helpOut('${data.id}')">HJÄLP TILL</button>
+                <span class="label-tiny">Från: ${task.author_id}</span>
+                <span style="font-size:0.5rem; color:#ccc;">${new Date(task.created_at).toLocaleTimeString()}</span>
             </div>
         `;
         container.prepend(el);
     }
 
-    function helpOut(id) {
-        alert("Du har valt att hjälpa till! +5 XO genereras som tack.");
-        stats.helped++;
-        balance += 5;
-        lastActive = Date.now();
-        save();
-    }
+    // --- LYSSNA PÅ REALTID ---
+    supabaseClient
+        .channel('public:tasks')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => {
+            renderTask(payload.new);
+        })
+        .subscribe();
 
-    // --- REALTIME ---
-    channel
-    .on('presence', { event: 'sync' }, () => {
-        const count = Object.keys(channel.presenceState()).length;
-        document.getElementById('node-status').innerText = `● ${count} ONLINE`;
-    })
-    .on('broadcast', { event: 'grid-msg' }, ({ payload }) => renderGrid(payload))
-    .subscribe();
-
-    // --- NAV & BACKUP ---
     function switchView(v) {
         document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
@@ -242,17 +128,9 @@
         document.getElementById('nav-'+v).classList.add('active');
     }
 
-    function downloadBackup() {
-        const data = { id: myID, bal: balance, stats: stats, date: new Date() };
-        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `XO_Vault_${myID}.json`;
-        a.click();
-    }
-
-    updateUI();
-    setInterval(updateUI, 60000); // Uppdatera hälsa varje minut
+    document.getElementById('display-id').innerText = myID;
+    document.getElementById('balance').innerText = Math.floor(balance);
+    loadTasks();
 </script>
 </body>
 </html>
