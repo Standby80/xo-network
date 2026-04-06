@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v15.1</title>
+    <title>XO Network - v15.2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -13,137 +13,152 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 110px; color: var(--xo-dark); overflow-x: hidden; }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
 
-        /* Nav */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; border-top: 1px solid #eee; }
-        .nav-item { font-size: 0.7rem; font-weight: 700; color: #bbb; cursor: pointer; text-align: center; flex: 1; }
+        /* Navigation */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; border-top: 1px solid #eee; }
+        .nav-item { font-size: 0.7rem; font-weight: 700; color: #bbb; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
         .nav-item.active { color: var(--xo-pink); }
         .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
-        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view { display: none; animation: fadeIn 0.4s ease; }
         .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 
-        .card { background: var(--xo-white); border-radius: 25px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
-        .btn { border: none; padding: 14px; border-radius: 18px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-dark { background: #444; }
-        .btn-small { padding: 8px 12px; font-size: 0.7rem; border-radius: 10px; width: auto; }
+        /* Cards & UI */
+        .card { background: var(--xo-white); border-radius: 30px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
+        .balance-val { font-size: 4rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -3px; }
+        .status-area { background: #2d3436; padding: 14px; border-radius: 20px; color: #fff; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 10px #2ecc71; display: inline-block; margin-right: 6px; }
+        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
+        .btn:active { transform: scale(0.98); }
+        .btn-dark { background: #444; color: #fff; }
 
-        /* Lists */
-        .list-container { max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
-        .item-card { background: #fff; border-radius: 18px; padding: 15px; border-left: 5px solid var(--xo-pink); box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-        .msg-card { background: #fff; border-radius: 18px; padding: 15px; border-left: 5px solid #2d3436; margin-bottom: 10px; }
-        
-        input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; outline: none; }
+        /* Chattrutor */
+        .log-container { height: 350px; overflow-y: auto; background: #eee; border-radius: 25px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px inset rgba(0,0,0,0.05); }
+        .task-card { background: #fff; border-radius: 15px; padding: 12px 16px; border-left: 5px solid var(--xo-pink); box-shadow: 0 2px 8px rgba(0,0,0,0.05); font-size: 0.9rem; flex-shrink: 0; position: relative; }
+        .task-time { font-size: 0.6rem; color: #bbb; position: absolute; top: 12px; right: 16px; }
+
+        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
+        #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; }
+        #reader, #qrcode { background: white; padding: 20px; border-radius: 25px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:0.8rem; font-weight:bold;">
-        <div><span style="color:#2ecc71">●</span> XO LIVE</div>
-        <div id="display-id" style="color:var(--xo-pink)">...</div>
+    <div class="status-area">
+        <div><span id="status-dot" class="dot"></span><span id="net-text">NÄTVERK SÄKRAT</span></div>
+        <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">0 ONLINE</div>
     </div>
 
     <div id="view-wallet" class="view active">
-        <div class="card" style="text-align:center;">
-            <div style="font-size:0.7rem; color:#bbb;">SALDO</div>
-            <div style="font-size:3.5rem; font-weight:800;" id="balance">1000</div>
-            <button class="btn" onclick="openScanner()" style="margin-top:15px;">📤 SKICKA XO</button>
-            <button class="btn btn-dark" onclick="showReceiveQR()" style="margin-top:10px;">📥 TA EMOT</button>
+        <div class="card">
+            <span style="font-size:0.65rem; font-weight:800; color:#bbb; text-transform:uppercase;">Social Kraft</span>
+            <div class="balance-val" id="balance">1000</div>
+            <div style="height: 8px; background: #eee; border-radius: 10px; margin: 15px 0; overflow: hidden;">
+                <div id="rust-bar" style="height: 100%; background: var(--xo-pink); width: 100%; transition: 1s;"></div>
+            </div>
+            <p style="font-size: 0.6rem; color: #ccc; text-align:center; font-family: monospace;">ID: <span id="display-id">...</span></p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px;">
+            <button class="btn" onclick="openScanner()">📤 SKICKA</button>
+            <button class="btn btn-dark" onclick="showReceiveQR()">📥 TA EMOT</button>
+        </div>
+        <div class="card" style="background:#2d3436; color:white;">
+            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">💾 BACKUP</button>
         </div>
     </div>
 
     <div id="view-grid" class="view">
-        <h3>Griden 🌍</h3>
-        <div id="grid-container" class="list-container"></div>
-        <input type="text" id="grid-input" placeholder="Skriv något...">
-        <button class="btn" onclick="postAction('grid')">PUBLICERA</button>
-    </div>
-
-    <div id="view-help" class="view">
-        <h3>Handtaget 🤝</h3>
-        <div id="help-container" class="list-container"></div>
-        <div class="card" style="border: 2px dashed #ddd; background:transparent;">
-            <input type="text" id="help-input" placeholder="Vad behöver du hjälp med?">
-            <button class="btn" onclick="postAction('help')">BE OM HJÄLP</button>
+        <h3 style="margin-bottom:15px;">Griden 🌍</h3>
+        <div id="grid-container" class="log-container"></div>
+        <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
+            <input type="text" id="grid-input" placeholder="Vad händer i byn?">
+            <button class="btn" onclick="sendToDatabase('grid')">PUBLICERA</button>
         </div>
     </div>
 
-    <div id="view-inbox" class="view">
-        <h3>Inkorgen 📥</h3>
-        <div id="inbox-container" class="list-container"></div>
-        <p style="font-size:0.7rem; color:#999; text-align:center;">Här ser du personer som vill hjälpa dig.</p>
+    <div id="view-help" class="view">
+        <h3 style="margin-bottom:15px;">Handtaget 🤝</h3>
+        <div id="help-container" class="log-container"></div>
+        <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
+            <input type="text" id="help-input" placeholder="Vad behöver du hjälp med?">
+            <button class="btn btn-dark" onclick="sendToDatabase('help')">BE OM HJÄLP</button>
+        </div>
     </div>
+
+    <div id="view-market" class="view"><h3>Torget 🏪</h3><div class="card">Kommer snart...</div></div>
 </div>
 
-<div id="qr-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; flex-direction:column; align-items:center; justify-content:center;" onclick="this.style.display='none'">
-    <div id="qrcode" style="background:white; padding:20px; border-radius:20px;"></div>
-    <div id="reader" style="width:300px;"></div>
+<div id="qr-overlay" onclick="closeQR()">
+    <div id="qr-canvas-container" onclick="event.stopPropagation()">
+        <div id="reader" style="display:none; width:300px;"></div> 
+        <div id="qrcode" style="display: flex; justify-content: center;"></div> 
+        <button class="btn btn-dark" style="margin-top:15px;" onclick="closeQR()">STÄNG</button>
+    </div>
 </div>
 
 <div class="nav-bar">
     <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
     <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
     <div class="nav-item" id="nav-help" onclick="switchView('help')"><span class="nav-icon">🤝</span>Handtaget</div>
-    <div class="nav-item" id="nav-inbox" onclick="switchView('inbox')"><span class="nav-icon">📥</span>Inkorgen</div>
+    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
     const SUPABASE_URL = 'https://pwittnltsbtojzkhovos.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let myID = localStorage.getItem('xo_id') || 'XO-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     localStorage.setItem('xo_id', myID);
 
-    // --- FUNKTIONER ---
-    function render(t) {
-        let containerId = t.type === 'help' ? 'help-container' : 'grid-container';
-        if (t.type === 'msg' && t.target_id === myID) containerId = 'inbox-container';
-        if (t.type === 'msg' && t.target_id !== myID) return; // Inte till mig
+    const channel = supabaseClient.channel('xo-global', { config: { broadcast: { self: true }, presence: { key: myID } } });
 
-        const container = document.getElementById(containerId);
+    function renderTask(t) {
+        // Om 'type' saknas eller är 'grid' hamnar det på Griden, annars i Handtaget
+        const targetId = (t.type === 'help') ? 'help-container' : 'grid-container';
+        const container = document.getElementById(targetId);
         if(!container) return;
 
         const el = document.createElement('div');
-        el.className = t.type === 'msg' ? 'msg-card' : 'item-card';
-        
-        const isMine = t.author_id === myID;
-        const btnHtml = isMine ? `<button class="btn btn-small btn-dark" style="background:#ff7675" onclick="deleteItem('${t.id}')">Ta bort</button>` : 
-                        (t.type === 'help' ? `<button class="btn btn-small btn-dark" onclick="sendInterest('${t.author_id}', '${t.title}')">Jag hjälper!</button>` : '');
+        el.className = 'task-card';
+        const date = t.created_at ? new Date(t.created_at) : new Date();
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         el.innerHTML = `
-            <div style="font-size:0.6rem; display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span style="color:var(--xo-pink)">${t.author_id}</span>
-                <span style="color:#ccc">${new Date(t.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-            </div>
-            <div style="font-weight:600;">${t.title}</div>
-            <div style="margin-top:10px;">${btnHtml}</div>
+            <span class="task-time">${timeStr}</span>
+            <strong style="color:var(--xo-pink); font-size:0.75rem;">${t.author_id}</strong><br>
+            ${t.title}
         `;
-        container.prepend(el);
+        container.appendChild(el);
+        container.scrollTop = container.scrollHeight;
     }
 
-    async function postAction(type, target = null, customTitle = null) {
-        const input = document.getElementById(type + '-input');
-        const title = customTitle || input.value;
-        if(!title) return;
-        await supabase.from('tasks').insert([{ title, author_id: myID, type, target_id: target }]);
-        if(input) input.value = "";
+    async function sendToDatabase(type) {
+        const inputId = (type === 'help') ? 'help-input' : 'grid-input';
+        const input = document.getElementById(inputId);
+        if(!input.value) return;
+        await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID, type: type }]);
+        input.value = "";
     }
 
-    async function sendInterest(authorId, taskTitle) {
-        if(!confirm("Vill du skicka ett meddelande till " + authorId + "?")) return;
-        await postAction('msg', authorId, `Jag vill hjälpa dig med: "${taskTitle}"`);
-        alert("Meddelande skickat! Kolla Inkorgen för svar.");
+    // Realtime lyssnare
+    channel.on('presence', { event: 'sync' }, () => {
+        document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
+    })
+    .on('broadcast', { event: 'transfer' }, ({ payload }) => {
+        if (payload.to === myID) { balance += parseFloat(payload.amount); updateUI(); alert("Mottog " + payload.amount + " XO!"); }
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, p => renderTask(p.new))
+    .subscribe();
+
+    function updateUI() {
+        document.getElementById('balance').innerText = Math.floor(balance);
+        document.getElementById('display-id').innerText = myID;
+        localStorage.setItem('xo_bal', balance);
     }
 
-    async function deleteItem(id) {
-        await supabase.from('tasks').delete().eq('id', id);
-        location.reload(); 
-    }
-
-    // --- SYSTEM ---
     function switchView(v) {
         document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
@@ -151,16 +166,42 @@
         document.getElementById('nav-'+v).classList.add('active');
     }
 
-    supabase.channel('custom-all-channel')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, p => render(p.new))
-    .subscribe();
+    // QR LOGIK (Återställd till v14.1-standard)
+    function showReceiveQR() {
+        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
+        document.getElementById('reader').style.display = "none";
+        qrDiv.style.display = "block";
+        document.getElementById('qr-overlay').style.display = "flex";
+        new QRCode(qrDiv, { text: "XO_ADDR_" + myID, width: 220, height: 220 });
+    }
+    let html5QrCode;
+    function openScanner() {
+        document.getElementById('qrcode').style.display = "none";
+        document.getElementById('reader').style.display = "block";
+        document.getElementById('qr-overlay').style.display = "flex";
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            if (text.startsWith("XO_ADDR_")) {
+                const amount = prompt("Hur mycket XO?", "50");
+                if (amount && balance >= parseFloat(amount)) {
+                    balance -= parseFloat(amount); updateUI();
+                    channel.send({ type: 'broadcast', event: 'transfer', payload: { to: text.replace("XO_ADDR_", ""), from: myID, amount: amount } });
+                }
+            }
+            closeQR();
+        });
+    }
+    function closeQR() { if (html5QrCode) { html5QrCode.stop().catch(() => {}); html5QrCode = null; } document.getElementById('qr-overlay').style.display = "none"; }
+    function downloadBackup() {
+        const blob = new Blob([JSON.stringify({ id: myID, bal: balance })], { type: 'application/json' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `XO_${myID}.json`; a.click();
+    }
 
-    supabase.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
-        if(data) data.forEach(render);
+    // Initiera hämtning
+    supabaseClient.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
+        if(data) data.forEach(renderTask);
     });
-
-    document.getElementById('display-id').innerText = myID;
-    document.getElementById('balance').innerText = Math.floor(balance);
+    updateUI();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
