@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v14.3</title>
+    <title>XO Network - v14.4</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f4f7f6; --xo-white: #ffffff; }
-        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 110px; color: var(--xo-dark); overflow-x: hidden; }
-        
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
 
         /* Navigation */
@@ -22,56 +19,54 @@
         .nav-item.active { color: var(--xo-pink); }
         .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
-        /* Views */
         .view { display: none; animation: fadeIn 0.4s ease; }
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 
-        /* Wallet Cards */
+        /* Cards */
         .card { background: var(--xo-white); border-radius: 30px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
         .balance-val { font-size: 4rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -3px; }
         
-        /* Status Header */
         .status-area { background: #2d3436; padding: 14px; border-radius: 20px; color: #fff; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 10px #2ecc71; display: inline-block; margin-right: 6px; }
 
-        /* Buttons */
         .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
         .btn:active { transform: scale(0.98); }
         .btn-dark { background: #444; color: #fff; }
 
-        /* Grid Log/Chat Styling */
+        /* Grid Chat */
         #grid-container { 
-            height: 350px; 
+            height: 380px; 
             overflow-y: auto; 
-            background: #eee; 
+            background: rgba(0,0,0,0.03); 
             border-radius: 25px; 
             padding: 15px; 
             margin-bottom: 15px; 
             display: flex; 
             flex-direction: column; 
-            gap: 10px;
-            border: 1px inset rgba(0,0,0,0.05);
+            gap: 12px;
+            border: 1px solid #eee;
         }
 
         .task-card { 
             background: #fff; 
-            border-radius: 15px; 
+            border-radius: 18px; 
             padding: 12px 16px; 
-            border-left: 5px solid var(--xo-pink); 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
-            font-size: 0.9rem;
+            border-left: 6px solid var(--xo-pink); 
+            box-shadow: 0 3px 10px rgba(0,0,0,0.03); 
+            font-size: 0.95rem;
             flex-shrink: 0;
-            position: relative;
         }
 
-        .task-time { 
-            font-size: 0.6rem; 
-            color: #bbb; 
-            position: absolute; 
-            top: 12px; 
-            right: 16px; 
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
         }
+
+        .task-id { color: var(--xo-pink); font-weight: 800; font-size: 0.7rem; }
+        .task-time { color: #ccc; font-size: 0.65rem; font-weight: 600; }
 
         input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
 
@@ -84,7 +79,7 @@
 
 <div class="container">
     <div class="status-area">
-        <div><span id="status-dot" class="dot"></span><span id="net-text">NÄTVERK SÄKRAT</span></div>
+        <div><span id="status-dot" class="dot"></span><span>NÄTVERK LIVE</span></div>
         <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">0 ONLINE</div>
     </div>
 
@@ -97,41 +92,32 @@
             </div>
             <p style="font-size: 0.6rem; color: #ccc; text-align:center; font-family: monospace;">ID: <span id="display-id">...</span></p>
         </div>
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px;">
             <button class="btn" onclick="openScanner()">📤 SKICKA</button>
             <button class="btn btn-dark" onclick="showReceiveQR()">📥 TA EMOT</button>
         </div>
-        
         <div class="card" style="background:#2d3436; color:white;">
-            <h4 style="margin:0 0 15px;">Backup & Säkerhet</h4>
-            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">💾 EXPORTERA PLÅNBOK</button>
-            <label class="btn btn-dark" style="margin-top:10px; font-size:0.75rem; border: 1px solid #555; cursor:pointer;">
-                📥 ÅTERSTÄLL FRÅN FIL
-                <input type="file" id="restore-file" style="display:none;" onchange="restoreBackup(event)">
-            </label>
+            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">💾 BACKUP</button>
         </div>
     </div>
 
     <div id="view-grid" class="view">
-        <h3 style="margin-bottom:15px;">Griden 🌍</h3>
+        <h3 style="margin-bottom:10px;">Griden 🌍</h3>
         <div id="grid-container"></div>
         <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
-            <input type="text" id="grid-input" placeholder="Skriv ett meddelande...">
+            <input type="text" id="grid-input" placeholder="Skriv till byn...">
             <button class="btn" onclick="sendToDatabase()">PUBLICERA</button>
         </div>
     </div>
 
-    <div id="view-family" class="view"><h3>Familjen 🧸</h3><div class="card">Hushållslogg kommer snart...</div></div>
-    <div id="view-market" class="view"><h3>Torget 🏪</h3><div class="card">Lokala erbjudanden kommer snart...</div></div>
+    <div id="view-family" class="view"><h3>Familjen 🧸</h3><div class="card">Logg kommer...</div></div>
+    <div id="view-market" class="view"><h3>Torget 🏪</h3><div class="card">Erbjudanden kommer...</div></div>
 </div>
 
 <div id="qr-overlay" onclick="closeQR()">
     <div id="qr-canvas-container" onclick="event.stopPropagation()">
         <div id="reader"></div> 
         <div id="qrcode" style="display: flex; justify-content: center;"></div> 
-        <h3 id="qr-title" style="color:#333; text-align:center; margin-top:15px; font-size: 1.1rem;">Skanna</h3>
-        <p id="qr-desc" style="color:#666; text-align:center; font-size:0.75rem;">Klicka utanför för att stänga</p>
         <button class="btn btn-dark" style="margin-top:15px;" onclick="closeQR()">STÄNG</button>
     </div>
 </div>
@@ -150,96 +136,51 @@
     
     let myID = localStorage.getItem('xo_id') || 'XO-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let lastActive = Date.now();
     localStorage.setItem('xo_id', myID);
 
     const channel = supabaseClient.channel('xo-global-v14', { config: { broadcast: { self: true }, presence: { key: myID } } });
-
-    function showReceiveQR() {
-        const qrDiv = document.getElementById('qrcode');
-        qrDiv.innerHTML = "";
-        document.getElementById('reader').style.display = "none";
-        qrDiv.style.display = "block";
-        document.getElementById('qr-overlay').style.display = "flex";
-        document.getElementById('qr-title').innerText = "Ditt Mottagar-ID";
-        new QRCode(qrDiv, { text: "XO_ADDR_" + myID, width: 220, height: 220 });
-    }
-
-    let html5QrCode;
-    function openScanner() {
-        document.getElementById('qrcode').style.display = "none";
-        document.getElementById('reader').style.display = "block";
-        document.getElementById('qr-overlay').style.display = "flex";
-        document.getElementById('qr-title').innerText = "Rikta kameran";
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
-            handleScannedCode(decodedText);
-            closeQR();
-        });
-    }
-
-    function handleScannedCode(text) {
-        if (text.startsWith("XO_ADDR_")) {
-            const targetID = text.replace("XO_ADDR_", "");
-            const amount = prompt("Hur mycket XO vill du skicka till " + targetID + "?", "50");
-            if (amount && balance >= parseFloat(amount)) {
-                balance -= parseFloat(amount);
-                channel.send({ type: 'broadcast', event: 'transfer', payload: { to: targetID, from: myID, amount: amount } });
-                updateUI();
-                alert("Överfört " + amount + " XO!");
-            } else { alert("Saldot räcker inte!"); }
-        }
-    }
-
-    function closeQR() {
-        if (html5QrCode) { html5QrCode.stop().catch(() => {}); html5QrCode = null; }
-        document.getElementById('qr-overlay').style.display = "none";
-    }
-
-    channel.on('presence', { event: 'sync' }, () => {
-        document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
-    })
-    .on('broadcast', { event: 'transfer' }, ({ payload }) => {
-        if (payload.to === myID) {
-            balance += parseFloat(payload.amount);
-            updateUI();
-            alert("Du tog emot " + payload.amount + " XO!");
-        }
-    })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => renderTask(payload.new))
-    .subscribe();
-
-    async function sendToDatabase() {
-        const input = document.getElementById('grid-input');
-        if(!input.value) return;
-        await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID }]);
-        input.value = "";
-    }
 
     function renderTask(t) {
         const container = document.getElementById('grid-container');
         const el = document.createElement('div');
         el.className = 'task-card';
         
+        // Tids-logik med fallback
         const date = t.created_at ? new Date(t.created_at) : new Date();
         const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const dateStr = date.toLocaleDateString([], { day: 'numeric', month: 'short' });
 
         el.innerHTML = `
-            <span class="task-time">${dateStr} ${timeStr}</span>
-            <strong style="color:var(--xo-pink); font-size:0.75rem;">${t.author_id}</strong><br>
-            ${t.title}
+            <div class="task-header">
+                <span class="task-id">${t.author_id}</span>
+                <span class="task-time">${timeStr}</span>
+            </div>
+            <div class="task-body">${t.title}</div>
         `;
         container.appendChild(el);
         container.scrollTop = container.scrollHeight;
     }
 
+    async function sendToDatabase() {
+        const input = document.getElementById('grid-input');
+        if(!input.value) return;
+        const { error } = await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID }]);
+        if(error) console.log("Fel:", error);
+        input.value = "";
+    }
+
+    channel.on('presence', { event: 'sync' }, () => {
+        document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
+    })
+    .on('broadcast', { event: 'transfer' }, ({ payload }) => {
+        if (payload.to === myID) { balance += parseFloat(payload.amount); updateUI(); }
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => renderTask(payload.new))
+    .subscribe();
+
     function updateUI() {
         document.getElementById('balance').innerText = Math.floor(balance);
         document.getElementById('display-id').innerText = myID;
         localStorage.setItem('xo_bal', balance);
-        const hours = (Date.now() - lastActive) / (1000 * 60 * 60);
-        document.getElementById('rust-bar').style.width = Math.max(0, 100 - (hours * 0.5)) + "%";
     }
 
     function switchView(v) {
@@ -247,40 +188,36 @@
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
         document.getElementById('nav-'+v).classList.add('active');
-        if(v === 'grid') {
-            const c = document.getElementById('grid-container');
-            c.scrollTop = c.scrollHeight;
-        }
+        if(v==='grid') { const c = document.getElementById('grid-container'); c.scrollTop = c.scrollHeight; }
     }
 
-    function downloadBackup() {
-        const blob = new Blob([JSON.stringify({ id: myID, bal: balance })], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `XO_${myID}.json`; a.click();
+    // QR & Scanner (Förenklad för att spara plats)
+    function showReceiveQR() {
+        const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
+        document.getElementById('qr-overlay').style.display = "flex";
+        new QRCode(qrDiv, { text: "XO_ADDR_" + myID, width: 200, height: 200 });
     }
-
-    function restoreBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if(data.id) {
-                    myID = data.id; balance = data.bal;
-                    localStorage.setItem('xo_id', myID); localStorage.setItem('xo_bal', balance);
-                    updateUI(); alert("Plånbok återställd!"); location.reload();
+    
+    let html5QrCode;
+    function openScanner() {
+        document.getElementById('qr-overlay').style.display = "flex";
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
+            if (text.startsWith("XO_ADDR_")) {
+                const amount = prompt("XO att skicka?", "50");
+                if (amount && balance >= amount) {
+                    balance -= amount;
+                    channel.send({ type: 'broadcast', event: 'transfer', payload: { to: text.replace("XO_ADDR_", ""), from: myID, amount } });
+                    updateUI();
                 }
-            } catch(err) { alert("Felaktig fil."); }
-        };
-        reader.readAsText(file);
+            }
+            closeQR();
+        });
     }
+    function closeQR() { if(html5QrCode) html5QrCode.stop(); document.getElementById('qr-overlay').style.display = "none"; }
 
     supabaseClient.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
-        if(data) {
-            data.forEach(renderTask);
-            const c = document.getElementById('grid-container');
-            c.scrollTop = c.scrollHeight;
-        }
+        if(data) data.forEach(renderTask);
     });
 
     updateUI();
