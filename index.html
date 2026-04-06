@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v4.7</title>
+    <title>XO Network - v4.8</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -21,10 +21,10 @@
         .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; color: #333; }
         .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; }
         .btn-main { background: var(--xo-pink); color: white; }
-        .btn-sec { background: var(--xo-dark); color: white; }
-        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #eee; margin-right: 5px; }
-        .online { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .status-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #eee; padding: 8px 15px; border-radius: 12px; font-size: 0.65rem; font-weight: bold; color: #666; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; display: inline-block; margin-right: 5px; }
+        .online-dot { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
     </style>
 </head>
 <body>
@@ -38,24 +38,23 @@
             <div style="text-align: center; color: #aaa; font-weight: bold;">XO CREDITS</div>
         </div>
         <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
-        <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
-        <div id="reader" style="display:none; width:100%; border-radius:20px; overflow:hidden; margin:10px 0;"></div>
-        <div id="qrcode-out" style="display:none; text-align:center; padding:15px; background:white; border-radius:20px; border:2px solid var(--xo-pink); margin:10px 0;"></div>
+        <button class="btn btn-main" style="background:var(--xo-dark)" onclick="showQR()">GE BORT 50 XO</button>
+        <div id="reader" style="display:none; width:100%; border-radius:20px; overflow:hidden; margin-top:10px;"></div>
+        <div id="qrcode-out" style="display:none; text-align:center; padding:15px; background:white; border-radius:20px; border:2px solid var(--xo-pink); margin-top:10px;"></div>
     </div>
 
     <div id="view-grid" class="view">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin:0;">Griden 🌍</h2>
-            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>ANSLUTER...</div>
+        <div class="status-area">
+            <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
+            <div><span style="color:var(--xo-pink)">●</span> <span id="online-count">1</span> ONLINE JUST NU</div>
         </div>
         
         <div id="task-container"></div>
 
-        <div class="card" style="margin-top: 30px; border-style: dashed; background: #fafafa;">
-            <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem;">
-            <button class="btn btn-main" style="margin: 0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
+        <div class="card" style="margin-top: 20px; border-style: dashed; background: #fafafa;">
+            <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box;">
+            <button class="btn btn-main" style="margin:0;" onclick="postTask()">PUBLICERA PÅ GRIDEN</button>
         </div>
-        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:none; color:#ccc; font-size:0.5rem; margin-top:20px;">RENSA LOKAL CACHE (OM DET FASTNAR)</button>
     </div>
 
 </div>
@@ -66,22 +65,21 @@
 </div>
 
 <script>
-    // --- GLOBAL SYNC NODER ---
+    // --- KONFIGURATION ---
     const gun = Gun({
         peers: [
             'https://gun-manhattan.herokuapp.com/gun',
-            'https://peer.wall.org/gun',
-            'https://gun-us.herokuapp.com/gun',
-            'https://relay.peer.ooo/gun'
+            'https://relay.peer.ooo/gun',
+            'https://gun-us.herokuapp.com/gun'
         ],
-        localStorage: true // Vi sparar lokalt men synkar globalt
+        localStorage: true
     });
 
-    // NY UNIK NYCKEL FÖR ATT RENSA GAMLA TEST
-    const gridTasks = gun.get('xo_grid_v4_7_global_sync');
+    const grid = gun.get('xo_world_grid_v4_8');
+    const presence = gun.get('xo_presence_v4_8');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let myID = localStorage.getItem('xo_peer_id') || 'U' + Math.random().toString(36).substr(2, 4);
+    let myID = localStorage.getItem('xo_peer_id') || 'User_' + Math.random().toString(36).substr(2, 4);
     localStorage.setItem('xo_peer_id', myID);
 
     function save() {
@@ -89,79 +87,71 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    gun.on('hi', () => {
-        document.getElementById('dot').className = "status-dot online";
-        document.getElementById('net-status').innerText = "GRIDEN ONLINE";
-        document.getElementById('net-status').style.color = "#2ecc71";
+    // --- HEARTBEAT / ONLINE RÄKNARE ---
+    // Skicka "Jag lever" var 5:e sekund
+    setInterval(() => {
+        presence.get(myID).put({ time: Date.now() });
+    }, 5000);
+
+    // Räkna hur många som "lever" (uppdaterat senaste 15 sek)
+    let activeUsers = {};
+    presence.map().on((data, id) => {
+        if (data && data.time > Date.now() - 15000) {
+            activeUsers[id] = true;
+        } else {
+            delete activeUsers[id];
+        }
+        document.getElementById('online-count').innerText = Object.keys(activeUsers).length;
     });
 
-    // --- GRID FUNKTIONER ---
+    gun.on('hi', () => {
+        document.getElementById('dot').className = "dot online-dot";
+        document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
+    });
+
+    // --- GRID LOGIK ---
     function postTask() {
-        const input = document.getElementById('task-input');
-        if(!input.value) return;
-        const id = 'ID_' + Date.now() + Math.random().toString(36).substr(2, 3);
-        
-        // Vi använder .put() för att sprida det i nätverket
-        gridTasks.get(id).put({
-            title: input.value,
-            creator: myID,
-            status: 'open',
-            time: Date.now()
-        });
-        input.value = "";
+        const val = document.getElementById('task-input').value;
+        if(!val) return;
+        grid.get(Date.now()).put({ title: val, from: myID, status: 'open' });
+        document.getElementById('task-input').value = "";
     }
 
-    // Vi lyssnar aktivt på ALLA ändringar i nätverket
-    gridTasks.map().on((data, id) => {
-        if(!data || data.status !== 'open') {
-            const existing = document.getElementById(id);
-            if(existing) existing.remove();
-            return;
-        }
-        
-        // Om kortet redan finns, uppdatera det bara inte
-        if(document.getElementById(id)) return;
-
-        const container = document.getElementById('task-container');
+    grid.map().on((data, id) => {
+        if(!data || data.status !== 'open' || document.getElementById(id)) return;
         const el = document.createElement('div');
         el.id = id;
         el.className = 'task-card';
-        el.innerHTML = `
-            <div class="task-content">
-                <h4>${data.title}</h4>
-                <p>Av: ${data.creator} • ${new Date(data.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
-            </div>
-            <button class="btn-take" onclick="claimTask('${id}')">HJÄLP</button>
-        `;
-        container.prepend(el);
+        el.innerHTML = `<div><h4>${data.title}</h4><p>Från: ${data.from}</p></div><button class="btn" style="width:auto; padding:8px 12px; font-size:0.7rem; background:var(--xo-pink); color:white;" onclick="claim('${id}')">TA</button>`;
+        document.getElementById('task-container').prepend(el);
     });
 
-    function claimTask(id) {
-        if(confirm("Vill du hjälpa till?")) {
-            gridTasks.get(id).put({ status: 'claimed' });
+    function claim(id) {
+        if(confirm("Hjälpa till?")) {
+            grid.get(id).put({ status: 'claimed' });
+            document.getElementById(id).remove();
         }
     }
 
-    function switchView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('view-' + id).classList.add('active');
-        document.getElementById('nav-' + id).classList.add('active');
+    function switchView(v) {
+        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+        document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
     }
 
     function openScanner() {
-        const d = document.getElementById('reader'); d.style.display = 'block';
+        const d = document.getElementById('reader'); d.style.display='block';
         const s = new Html5Qrcode("reader");
         s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); alert("+50 XO!"); s.stop(); d.style.display='none'; }
+            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
         });
     }
 
     function showQR() {
-        const out = document.getElementById('qrcode-out'); out.innerHTML = ""; out.style.display = "block";
-        const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
-        QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (e, cv) => {
-            out.appendChild(cv); balance -= 50; save();
+        const o = document.getElementById('qrcode-out'); o.innerHTML=""; o.style.display='block';
+        QRCode.toCanvas(document.createElement('canvas'), "XO_GIFT_"+Math.random(), { width: 220 }, (e, c) => {
+            o.appendChild(c); balance -= 50; save();
         });
     }
 
