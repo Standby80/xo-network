@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v4.6</title>
+    <title>XO Network - v4.7</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -23,7 +23,7 @@
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
         .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #eee; margin-right: 5px; transition: 1s; }
+        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #eee; margin-right: 5px; }
         .online { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
     </style>
 </head>
@@ -46,15 +46,16 @@
     <div id="view-grid" class="view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h2 style="margin:0;">Griden 🌍</h2>
-            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>ANSLUTER TILL NÄTET...</div>
+            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>ANSLUTER...</div>
         </div>
         
         <div id="task-container"></div>
 
         <div class="card" style="margin-top: 30px; border-style: dashed; background: #fafafa;">
-            <input type="text" id="task-input" placeholder="Vad behövs?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px;">
+            <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem;">
             <button class="btn btn-main" style="margin: 0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
         </div>
+        <button onclick="localStorage.clear(); location.reload();" style="background:none; border:none; color:#ccc; font-size:0.5rem; margin-top:20px;">RENSA LOKAL CACHE (OM DET FASTNAR)</button>
     </div>
 
 </div>
@@ -65,20 +66,22 @@
 </div>
 
 <script>
-    // --- NYA SUPER-NODER FÖR 2026 ---
+    // --- GLOBAL SYNC NODER ---
     const gun = Gun({
         peers: [
-            'https://gun-server.herokuapp.com/gun',
-            'https://relay.peer.ooo/gun',
-            'https://gun-manhattan.herokuapp.com/gun'
+            'https://gun-manhattan.herokuapp.com/gun',
+            'https://peer.wall.org/gun',
+            'https://gun-us.herokuapp.com/gun',
+            'https://relay.peer.ooo/gun'
         ],
-        localStorage: true
+        localStorage: true // Vi sparar lokalt men synkar globalt
     });
 
-    const gridTasks = gun.get('xo_grid_v4_6_final');
+    // NY UNIK NYCKEL FÖR ATT RENSA GAMLA TEST
+    const gridTasks = gun.get('xo_grid_v4_7_global_sync');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let myID = localStorage.getItem('xo_peer_id') || 'ID_' + Math.random().toString(36).substr(2, 4);
+    let myID = localStorage.getItem('xo_peer_id') || 'U' + Math.random().toString(36).substr(2, 4);
     localStorage.setItem('xo_peer_id', myID);
 
     function save() {
@@ -86,10 +89,9 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    // Statuslyssnare - Blir grön när vi hittar en nod
     gun.on('hi', () => {
         document.getElementById('dot').className = "status-dot online";
-        document.getElementById('net-status').innerText = "NÄTVERK SÄKRAT";
+        document.getElementById('net-status').innerText = "GRIDEN ONLINE";
         document.getElementById('net-status').style.color = "#2ecc71";
     });
 
@@ -97,26 +99,47 @@
     function postTask() {
         const input = document.getElementById('task-input');
         if(!input.value) return;
-        const id = 'T' + Date.now();
-        gridTasks.get(id).put({ title: input.value, creator: myID, status: 'open', time: Date.now() });
+        const id = 'ID_' + Date.now() + Math.random().toString(36).substr(2, 3);
+        
+        // Vi använder .put() för att sprida det i nätverket
+        gridTasks.get(id).put({
+            title: input.value,
+            creator: myID,
+            status: 'open',
+            time: Date.now()
+        });
         input.value = "";
     }
 
+    // Vi lyssnar aktivt på ALLA ändringar i nätverket
     gridTasks.map().on((data, id) => {
         if(!data || data.status !== 'open') {
-            if(document.getElementById(id)) document.getElementById(id).remove();
+            const existing = document.getElementById(id);
+            if(existing) existing.remove();
             return;
         }
+        
+        // Om kortet redan finns, uppdatera det bara inte
         if(document.getElementById(id)) return;
+
         const container = document.getElementById('task-container');
         const el = document.createElement('div');
-        el.id = id; el.className = 'task-card';
-        el.innerHTML = `<div class="task-content"><h4>${data.title}</h4><p>Av: ${data.creator}</p></div><button class="btn-take" onclick="claimTask('${id}')">HJÄLP</button>`;
+        el.id = id;
+        el.className = 'task-card';
+        el.innerHTML = `
+            <div class="task-content">
+                <h4>${data.title}</h4>
+                <p>Av: ${data.creator} • ${new Date(data.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</p>
+            </div>
+            <button class="btn-take" onclick="claimTask('${id}')">HJÄLP</button>
+        `;
         container.prepend(el);
     });
 
     function claimTask(id) {
-        if(confirm("Vill du hjälpa till?")) gridTasks.get(id).put({ status: 'claimed' });
+        if(confirm("Vill du hjälpa till?")) {
+            gridTasks.get(id).put({ status: 'claimed' });
+        }
     }
 
     function switchView(id) {
@@ -126,12 +149,11 @@
         document.getElementById('nav-' + id).classList.add('active');
     }
 
-    // --- WALLET ---
     function openScanner() {
         const d = document.getElementById('reader'); d.style.display = 'block';
         const s = new Html5Qrcode("reader");
         s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
+            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); alert("+50 XO!"); s.stop(); d.style.display='none'; }
         });
     }
 
