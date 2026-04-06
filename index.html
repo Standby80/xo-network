@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v4.4</title>
+    <title>XO Network - v4.5</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -23,10 +23,10 @@
         .btn-main { background: var(--xo-pink); color: white; }
         .btn-sec { background: var(--xo-dark); color: white; }
         .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-right: 5px; }
-        .online { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
-        #reader { width: 100%; border-radius: 20px; overflow: hidden; display:none; }
-        #qrcode-out { text-align:center; display:none; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-right: 5px; transition: 0.5s; }
+        .online { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .error { background: #e74c3c; }
+        #debug-log { font-size: 0.6rem; color: #999; margin-top: 10px; text-align: left; background: #eee; padding: 5px; border-radius: 10px; max-height: 50px; overflow-y: auto; display: none; }
     </style>
 </head>
 <body>
@@ -41,14 +41,12 @@
         </div>
         <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
         <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
-        <div id="reader"></div>
-        <div id="qrcode-out"></div>
     </div>
 
     <div id="view-grid" class="view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h2 style="margin:0;">Griden 🌍</h2>
-            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>SÖKER NÄTVERK...</div>
+            <div id="net-status" style="font-size: 0.6rem; color: #999;"><span class="status-dot" id="dot"></span>ANSLUTER...</div>
         </div>
         
         <div id="task-container"></div>
@@ -57,16 +55,7 @@
             <input type="text" id="task-input" placeholder="Vad behöver du hjälp med?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 1rem;">
             <button class="btn btn-main" style="margin: 0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
         </div>
-    </div>
-
-    <div id="view-family" class="view">
-        <h2>Familje-Loggen</h2>
-        <div class="card"><h4>Hushållets kraft: 450 XO</h4></div>
-    </div>
-
-    <div id="view-market" class="view">
-        <h2>Torget</h2>
-        <div class="card"><h4>Lokal Partner</h4><button class="btn btn-main">SKAPA CHECK</button></div>
+        <div id="debug-log"></div>
     </div>
 
 </div>
@@ -74,25 +63,30 @@
 <div class="nav-bar">
     <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
     <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
-    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
-    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
-    // --- ROBUST NÄTVERKS-LOGIK ---
-    // Vi använder nu 4 olika globala noder för att garantera kontakt
+    // --- ULTRA CONNECT LOGIK ---
+    const log = (msg) => {
+        const d = document.getElementById('debug-log');
+        d.style.display = 'block';
+        d.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+        console.log(msg);
+    };
+
+    // Vi använder nu HTTPS-säkrade noder som fungerar bra med GitHub
     const peers = [
         'https://gun-manhattan.herokuapp.com/gun',
         'https://peer.wall.org/gun',
-        'https://gun-test.herokuapp.com/gun',
-        'https://gun-us.herokuapp.com/gun'
+        'https://dletta.herokuapp.com/gun'
     ];
     
-    const gun = Gun({ peers: peers, localStorage: true });
-    const gridTasks = gun.get('xo_grid_v4_4_stable');
+    log("Initierar Gun nätverk...");
+    const gun = Gun({ peers: peers, localStorage: true, radisk: false });
+    const gridTasks = gun.get('xo_grid_final_test_01');
 
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let myID = localStorage.getItem('xo_peer_id') || 'Anonym_' + Math.random().toString(36).substr(2, 4);
+    let myID = localStorage.getItem('xo_peer_id') || 'ID_' + Math.random().toString(36).substr(2, 4);
     localStorage.setItem('xo_peer_id', myID);
 
     function save() {
@@ -100,11 +94,17 @@
         document.getElementById('balance').innerText = Math.floor(balance);
     }
 
-    // Visuell bekräftelse på anslutning
+    // Status-lyssnare
     gun.on('hi', (peer) => {
-        console.log('Ansluten till:', peer);
-        document.getElementById('net-status').innerHTML = '<span class="status-dot online"></span>NÄTVERK SÄKRAT';
+        log("Ansluten till nod: " + peer.url);
+        document.getElementById('dot').className = "status-dot online";
+        document.getElementById('net-status').innerText = "GRIDEN ONLINE";
         document.getElementById('net-status').style.color = "#2ecc71";
+    });
+
+    gun.on('bye', (peer) => {
+        log("Tappade kontakt med nod.");
+        document.getElementById('dot').className = "status-dot";
     });
 
     // --- GRID FUNKTIONER ---
@@ -118,6 +118,7 @@
             status: 'open',
             time: Date.now()
         });
+        log("Skickade uppgift: " + input.value);
         input.value = "";
     }
 
@@ -139,31 +140,15 @@
     function claimTask(id) {
         if(confirm("Hjälpa till?")) {
             gridTasks.get(id).put({ status: 'claimed' });
+            log("Tog uppdrag: " + id);
         }
     }
 
-    // --- NAVIGATION & WALLET ---
     function switchView(id) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById('view-' + id).classList.add('active');
         document.getElementById('nav-' + id).classList.add('active');
-    }
-
-    function openScanner() {
-        const d = document.getElementById('reader'); d.style.display = 'block';
-        const s = new Html5Qrcode("reader");
-        s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            if(t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
-        });
-    }
-
-    function showQR() {
-        const out = document.getElementById('qrcode-out'); out.innerHTML = ""; out.style.display = "block";
-        const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
-        QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (e, cv) => {
-            out.appendChild(cv); balance -= 50; save();
-        });
     }
 
     save();
