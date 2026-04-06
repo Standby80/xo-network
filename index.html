@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v14.1</title>
+    <title>XO Network - v14.2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -39,15 +39,39 @@
         .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
         .btn:active { transform: scale(0.98); }
         .btn-dark { background: #444; color: #fff; }
-        .btn-outline { background: transparent; border: 2px solid #eee; color: #888; }
-        
-        /* Modal/Overlay for QR */
+
+        /* Grid Log/Chat Styling */
+        #grid-container { 
+            height: 350px; 
+            overflow-y: auto; 
+            background: #eee; 
+            border-radius: 25px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px;
+            border: 1px inset rgba(0,0,0,0.05);
+        }
+
+        .task-card { 
+            background: #fff; 
+            border-radius: 15px; 
+            padding: 12px 16px; 
+            border-left: 5px solid var(--xo-pink); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
+
         #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; }
         #reader { width: 100%; max-width: 350px; border-radius: 20px; overflow: hidden; background: white; }
         #qr-canvas-container { background: white; padding: 20px; border-radius: 25px; min-width: 300px; }
-
-        .task-card { background: #fff; border-radius: 22px; padding: 18px; margin-bottom: 15px; border-left: 6px solid var(--xo-pink); box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
-        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -75,10 +99,7 @@
         
         <div class="card" style="background:#2d3436; color:white;">
             <h4 style="margin:0 0 15px;">Backup & Säkerhet</h4>
-            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">
-                💾 EXPORTERA PLÅNBOK
-            </button>
-            
+            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">💾 EXPORTERA PLÅNBOK</button>
             <label class="btn btn-dark" style="margin-top:10px; font-size:0.75rem; border: 1px solid #555; cursor:pointer;">
                 📥 ÅTERSTÄLL FRÅN FIL
                 <input type="file" id="restore-file" style="display:none;" onchange="restoreBackup(event)">
@@ -89,8 +110,8 @@
     <div id="view-grid" class="view">
         <h3 style="margin-bottom:15px;">Griden 🌍</h3>
         <div id="grid-container"></div>
-        <div class="card" style="border-style: dashed; background: transparent;">
-            <input type="text" id="grid-input" placeholder="Vad händer i byn?">
+        <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
+            <input type="text" id="grid-input" placeholder="Skriv ett meddelande...">
             <button class="btn" onclick="sendToDatabase()">PUBLICERA</button>
         </div>
     </div>
@@ -196,8 +217,11 @@
         const container = document.getElementById('grid-container');
         const el = document.createElement('div');
         el.className = 'task-card';
-        el.innerHTML = `<strong>${t.author_id}:</strong> ${t.title}`;
-        container.prepend(el);
+        el.innerHTML = `<strong style="color:var(--xo-pink); font-size:0.75rem;">${t.author_id}</strong><br>${t.title}`;
+        container.appendChild(el); // Lägger till i slutet för chattrum-känsla
+        
+        // Auto-scroll till botten
+        container.scrollTop = container.scrollHeight;
     }
 
     function updateUI() {
@@ -213,6 +237,12 @@
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
         document.getElementById('nav-'+v).classList.add('active');
+        
+        // Om vi växlar till Griden, scrolla till botten direkt
+        if(v === 'grid') {
+            const c = document.getElementById('grid-container');
+            c.scrollTop = c.scrollHeight;
+        }
     }
 
     function downloadBackup() {
@@ -237,9 +267,15 @@
         reader.readAsText(file);
     }
 
+    // Hämta historik och rendera
     supabaseClient.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
-        if(data) data.forEach(renderTask);
+        if(data) {
+            data.forEach(renderTask);
+            const c = document.getElementById('grid-container');
+            c.scrollTop = c.scrollHeight;
+        }
     });
+
     updateUI();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
