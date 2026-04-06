@@ -3,64 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v7.3 Stable</title>
+    <title>XO Network - v8.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
+        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); -webkit-tap-highlight-color: transparent; }
+        
+        /* Navigation */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--xo-white); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
+        .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-item.active { color: var(--xo-pink); }
+        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
+
         .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* UI Elements */
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
-        .online { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; background: var(--xo-pink); color: white; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); opacity: 0.9; }
-        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: popIn 0.3s ease; }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; outline: none; -webkit-appearance: none; }
+        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; color: #333; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; transition: 0.2s; }
+        .btn-main { background: var(--xo-pink); color: white; }
+        .btn-sec { background: var(--xo-dark); color: white; }
+        
+        /* Status Badge */
+        .status-badge { font-size: 0.6rem; padding: 4px 10px; border-radius: 20px; background: #eee; color: #999; font-weight: bold; }
+        .status-online { background: #e3f9e5; color: #2ecc71; }
+
+        /* Grid Task Cards */
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        
+        #reader { width: 100%; border-radius: 20px; overflow: hidden; display:none; margin: 10px 0; }
+        #qrcode-out { text-align:center; display:none; padding: 15px; background: white; border-radius: 20px; border: 2px solid var(--xo-pink); margin: 10px 0; }
+        input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; outline: none; font-size: 1rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="status-area">
-        <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
-        <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">0 NODER ONLINE</div>
-    </div>
-
-    <div id="task-container">
+    
+    <div id="view-wallet" class="view active">
+        <div class="card">
+            <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem;">XO CORE ASSET</div>
+            <div class="balance-val" id="balance">1000</div>
+            <div style="text-align: center; color: #aaa; font-weight: bold; font-size: 0.8rem;">TILLGÄNGLIG KRAFT</div>
         </div>
-
-    <div class="card">
-        <input type="text" id="task-input" placeholder="Skriv till Griden...">
-        <button class="btn" onclick="sendTask()">PUBLICERA TILL ALLA</button>
+        <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
+        <button class="btn btn-sec" onclick="showQR()">GE BORT 50 XO</button>
+        <div id="reader"></div>
+        <div id="qrcode-out"></div>
     </div>
+
+    <div id="view-grid" class="view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0;">Griden 🌍</h2>
+            <span id="net-status" class="status-badge">ANSLUTER...</span>
+        </div>
+        
+        <div id="task-container">
+            </div>
+
+        <div class="card" style="margin-top: 20px; border-style: dashed; background: #fafafa;">
+            <input type="text" id="task-input" placeholder="Vad behövs hjälp med?">
+            <button class="btn btn-main" style="margin: 0;" onclick="sendTask()">PUBLICERA TILL ALLA</button>
+        </div>
+    </div>
+
+    <div id="view-family" class="view">
+        <h2>Familjen 🧸</h2>
+        <div class="card">
+            <h4>Hushållets gemensamma: <span style="color: var(--xo-pink)">450</span> XO</h4>
+            <p style="font-size: 0.8rem; color: #666;">Uppgifter i hemmet som genererar XO.</p>
+        </div>
+        <div class="card" style="opacity: 0.5; border-style: dashed;">
+            <p style="text-align: center; font-style: italic;">Logg-funktion kommer i v8.1</p>
+        </div>
+    </div>
+
+    <div id="view-market" class="view">
+        <h2>Torget 🏪</h2>
+        <div class="card">
+            <h4>Lokal Matbutik</h4>
+            <p>10% rabatt (Kostar 50 XO)</p>
+            <button class="btn btn-main" style="padding: 10px;">HÄMTA CHECK</button>
+        </div>
+        <div class="card">
+            <h4>Byns Café</h4>
+            <p>En gratis kaffe (Kostar 20 XO)</p>
+            <button class="btn btn-main" style="padding: 10px;">HÄMTA CHECK</button>
+        </div>
+    </div>
+
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
+    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
+    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
+    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
-    // --- DIN KONFIGURATION ---
+    // --- KONFIGURATION SUPABASE ---
     const SUPABASE_URL = 'https://pwittnltsbtojzkhovos.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
-    
-    // Initialisera Supabase
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // Unikt ID för denna enhet
     const myID = 'Node-' + Math.random().toString(36).substr(2, 4);
-    
-    // Skapa en Realtime-kanal
     const channel = supabaseClient.channel('xo-global', {
         config: { broadcast: { self: true }, presence: { key: myID } }
     });
 
-    // --- REALTIME LOGIK ---
+    let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
+
+    function updateBalanceUI() {
+        document.getElementById('balance').innerText = Math.floor(balance);
+        localStorage.setItem('xo_bal', balance);
+    }
+
+    // --- REALTIME ANSLUTNING ---
     channel
     .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         const count = Object.keys(state).length;
-        document.getElementById('node-count').innerText = count + " NODER ONLINE";
-        document.getElementById('dot').className = "dot online";
-        document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
+        const statusEl = document.getElementById('net-status');
+        statusEl.innerText = count + " NODER ONLINE";
+        statusEl.className = "status-badge status-online";
     })
     .on('broadcast', { event: 'new-task' }, ({ payload }) => {
         renderTask(payload);
@@ -71,35 +142,58 @@
         }
     });
 
+    // --- GRID FUNKTIONER ---
     function sendTask() {
         const input = document.getElementById('task-input');
         if (!input.value.trim()) return;
-        
         channel.send({
             type: 'broadcast',
             event: 'new-task',
             payload: { title: input.value, from: myID, id: Date.now() }
         });
-        
         input.value = "";
     }
 
     function renderTask(data) {
-        // Förhindra dubbletter
         if (document.getElementById(data.id)) return;
-        
         const container = document.getElementById('task-container');
         const el = document.createElement('div');
         el.id = data.id;
         el.className = 'task-card';
-        el.innerHTML = `
-            <div>
-                <h4 style="margin:0">${data.title}</h4>
-                <p style="margin:4px 0 0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p>
-            </div>
-        `;
+        el.innerHTML = `<div><h4 style="margin:0">${data.title}</h4><p style="margin:4px 0 0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p></div>`;
         container.prepend(el);
     }
+
+    // --- PLÅNBOK FUNKTIONER ---
+    function openScanner() {
+        const d = document.getElementById('reader'); d.style.display='block';
+        const s = new Html5Qrcode("reader");
+        s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
+            if(t.startsWith("XO_GIFT_")) { 
+                balance += 50; updateBalanceUI(); alert("+50 XO Mottaget!"); 
+                s.stop(); d.style.display='none'; 
+            }
+        });
+    }
+
+    function showQR() {
+        if(balance < 50) return alert("Saldot för lågt!");
+        const o = document.getElementById('qrcode-out'); o.innerHTML=""; o.style.display='block';
+        const code = "XO_GIFT_" + Math.random().toString(36).substr(2, 9);
+        QRCode.toCanvas(document.createElement('canvas'), code, { width: 220 }, (e, cv) => {
+            if(!e) { o.appendChild(cv); balance -= 50; updateBalanceUI(); }
+        });
+    }
+
+    // --- NAVIGATION ---
+    function switchView(v) {
+        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+        document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
+    }
+
+    updateBalanceUI();
 </script>
 </body>
 </html>
