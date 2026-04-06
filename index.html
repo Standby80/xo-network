@@ -3,134 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v7.1</title>
-    <script src="https://unpkg.com/nostr-tools/lib/nostr.bundle.js"></script>
+    <title>XO Network - v7.2 Stable</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
         body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-        .view { display: none; }
-        .view.active { display: block; }
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; transition: 0.3s; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4757; display: inline-block; margin-right: 5px; }
-        .online-dot { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
+        .online { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
         .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; background: var(--xo-pink); color: white; }
-        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: popIn 0.3s ease; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; outline: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="view-grid" class="view active">
-        <div class="status-area" id="status-bg">
-            <div><span id="dot" class="dot"></span><span id="net-text">SÖKER VÄG...</span></div>
-            <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">1 NODER</div>
-        </div>
+    <div class="status-area">
+        <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
+        <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">SÖKER NODER</div>
+    </div>
 
-        <div id="task-container">
-            </div>
+    <div id="task-container"></div>
 
-        <div class="card">
-            <input type="text" id="task-input" placeholder="Skriv något till Griden...">
-            <button class="btn" onclick="postTask()">SKICKA</button>
-        </div>
-        
-        <div id="log" style="font-size: 10px; color: #ccc; margin-top: 10px; font-family: monospace;"></div>
+    <div class="card">
+        <input type="text" id="task-input" placeholder="Skriv något till Griden...">
+        <button class="btn" onclick="sendTask()">PUBLICERA TILL ALLA</button>
     </div>
 </div>
 
 <script>
-    // --- NOSTR MULTI-SYNC ---
-    const RELAYS = [
-        'wss://relay.damus.io',
-        'wss://nos.lol',
-        'wss://relay.nostr.band',
-        'wss://offchain.pub',
-        'wss://relay.snort.social'
-    ];
+    // --- DIN KONFIGURATION ---
+    // VIKTIGT: Klistra in din URL här nedanför!
+    const SUPABASE_URL = 'KLISTRA_IN_DIN_PROJECT_URL_HÄR'; 
+    const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
     
-    const XO_TAG = "xo_v7_stable_test";
-    let privKey = localStorage.getItem('xo_priv');
-    if(!privKey) { privKey = NostrTools.generatePrivateKey(); localStorage.setItem('xo_priv', privKey); }
-    const pubKey = NostrTools.getPublicKey(privKey);
+    const supabase = Array.isArray(window['supabase-js']) ? window['supabase-js'][0].createClient(SUPABASE_URL, SUPABASE_KEY) : window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    const myID = 'User-' + Math.random().toString(36).substr(2, 4);
+    const channel = supabase.channel('xo-global-grid', {
+        config: { broadcast: { self: true }, presence: { key: myID } }
+    });
 
-    let activeSockets = [];
-    let nodes = new Set();
-    const seenEvents = new Set();
+    // --- REALTIME LOGIK ---
+    channel
+    .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const count = Object.keys(state).length;
+        document.getElementById('node-count').innerText = count + " NODER ONLINE";
+        document.getElementById('dot').className = "dot online";
+        document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
+    })
+    .on('broadcast', { event: 'new-task' }, ({ payload }) => {
+        renderTask(payload);
+    })
+    .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+            await channel.track({ online_at: new Date().toISOString() });
+        }
+    });
 
-    function uiLog(msg) {
-        document.getElementById('log').innerText = msg;
-    }
-
-    function connectAll() {
-        RELAYS.forEach(url => {
-            const socket = new WebSocket(url);
-            
-            socket.onopen = () => {
-                uiLog("Ansluten till: " + url);
-                document.getElementById('dot').className = "dot online-dot";
-                document.getElementById('net-text').innerText = "NÄTVERK SÄKRAT";
-                document.getElementById('status-bg').style.background = "#1e272e";
-                
-                // Prenumerera direkt
-                socket.send(JSON.stringify(["REQ", "sub", { "kinds": [1], "#t": [XO_TAG], "limit": 10 }]));
-                
-                // Skicka en heartbeat
-                sendToSocket(socket, "PRESENCE", "presence");
-                activeSockets.push(socket);
-            };
-
-            socket.onmessage = (msg) => {
-                const [type, subId, event] = JSON.parse(msg.data);
-                if (type === "EVENT") {
-                    if (event.tags.some(t => t[1] === "presence")) {
-                        nodes.add(event.pubkey);
-                        document.getElementById('node-count').innerText = nodes.size + " NODER";
-                    } else {
-                        render(event);
-                    }
-                }
-            };
-
-            socket.onerror = () => uiLog("Fel på relä: " + url);
+    function sendTask() {
+        const input = document.getElementById('task-input');
+        if (!input.value) return;
+        
+        channel.send({
+            type: 'broadcast',
+            event: 'new-task',
+            payload: { title: input.value, from: myID, id: Date.now() }
         });
+        
+        input.value = "";
     }
 
-    async function sendToSocket(ws, content, tag = XO_TAG) {
-        const event = {
-            kind: 1,
-            pubkey: pubKey,
-            created_at: Math.floor(Date.now() / 1000),
-            tags: [["t", tag]],
-            content: content
-        };
-        event.id = NostrTools.getEventHash(event);
-        event.sig = NostrTools.signEvent(event, privKey);
-        ws.send(JSON.stringify(["EVENT", event]));
-    }
-
-    function postTask() {
-        const val = document.getElementById('task-input').value;
-        if(!val) return;
-        activeSockets.forEach(ws => sendToSocket(ws, val));
-        document.getElementById('task-input').value = "";
-        render({ content: val, pubkey: pubKey, id: Date.now() });
-    }
-
-    function render(event) {
-        if(seenEvents.has(event.id)) return;
-        seenEvents.add(event.id);
+    function renderTask(data) {
+        if (document.getElementById(data.id)) return;
         const container = document.getElementById('task-container');
         const el = document.createElement('div');
+        el.id = data.id;
         el.className = 'task-card';
-        el.innerHTML = `<strong>${event.pubkey.substring(0,4)}:</strong> ${event.content}`;
+        el.innerHTML = `<div><h4 style="margin:0">${data.title}</h4><p style="margin:0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p></div>`;
         container.prepend(el);
     }
-
-    // Kör igång allt
-    connectAll();
 </script>
 </body>
 </html>
