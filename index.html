@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v7.2 Stable</title>
+    <title>XO Network - v7.3 Stable</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; }
@@ -13,10 +13,11 @@
         .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
         .online { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; background: var(--xo-pink); color: white; }
+        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; background: var(--xo-pink); color: white; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
         .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: popIn 0.3s ease; }
         @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; outline: none; }
+        input { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; outline: none; -webkit-appearance: none; }
     </style>
 </head>
 <body>
@@ -24,27 +25,31 @@
 <div class="container">
     <div class="status-area">
         <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
-        <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">SÖKER NODER</div>
+        <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">0 NODER ONLINE</div>
     </div>
 
-    <div id="task-container"></div>
+    <div id="task-container">
+        </div>
 
     <div class="card">
-        <input type="text" id="task-input" placeholder="Skriv något till Griden...">
+        <input type="text" id="task-input" placeholder="Skriv till Griden...">
         <button class="btn" onclick="sendTask()">PUBLICERA TILL ALLA</button>
     </div>
 </div>
 
 <script>
     // --- DIN KONFIGURATION ---
-    // VIKTIGT: Klistra in din URL här nedanför!
-    const SUPABASE_URL = 'KLISTRA_IN_DIN_PROJECT_URL_HÄR'; 
+    const SUPABASE_URL = 'https://pwittnltsbtojzkhovos.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
     
-    const supabase = Array.isArray(window['supabase-js']) ? window['supabase-js'][0].createClient(SUPABASE_URL, SUPABASE_KEY) : window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Initialisera Supabase
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    const myID = 'User-' + Math.random().toString(36).substr(2, 4);
-    const channel = supabase.channel('xo-global-grid', {
+    // Unikt ID för denna enhet
+    const myID = 'Node-' + Math.random().toString(36).substr(2, 4);
+    
+    // Skapa en Realtime-kanal
+    const channel = supabaseClient.channel('xo-global', {
         config: { broadcast: { self: true }, presence: { key: myID } }
     });
 
@@ -68,7 +73,7 @@
 
     function sendTask() {
         const input = document.getElementById('task-input');
-        if (!input.value) return;
+        if (!input.value.trim()) return;
         
         channel.send({
             type: 'broadcast',
@@ -80,12 +85,19 @@
     }
 
     function renderTask(data) {
+        // Förhindra dubbletter
         if (document.getElementById(data.id)) return;
+        
         const container = document.getElementById('task-container');
         const el = document.createElement('div');
         el.id = data.id;
         el.className = 'task-card';
-        el.innerHTML = `<div><h4 style="margin:0">${data.title}</h4><p style="margin:0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p></div>`;
+        el.innerHTML = `
+            <div>
+                <h4 style="margin:0">${data.title}</h4>
+                <p style="margin:4px 0 0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p>
+            </div>
+        `;
         container.prepend(el);
     }
 </script>
