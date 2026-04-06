@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v6.0</title>
+    <title>XO Network - v6.1</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
@@ -17,14 +17,11 @@
         .view { display: none; }
         .view.active { display: block; }
         .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
-        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; color: #333; }
-        .btn { border: none; padding: 16px; border-radius: 18px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 8px 0; }
-        .btn-main { background: var(--xo-pink); color: white; }
-        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .status-area { background: #2d3436; padding: 12px; border-radius: 18px; color: #fff; font-size: 0.7rem; margin-bottom: 15px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; display: inline-block; margin-right: 5px; }
         .online-dot { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: popIn 0.3s ease; }
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .debug-panel { background: #000; color: #0f0; font-family: monospace; font-size: 0.6rem; padding: 10px; border-radius: 10px; margin-top: 20px; max-height: 100px; overflow-y: auto; }
+        .task-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--xo-pink); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
@@ -33,25 +30,26 @@
     <div id="view-wallet" class="view active">
         <div class="card">
             <div style="font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem;">XO CORE</div>
-            <div class="balance-val" id="balance">1000</div>
+            <div id="balance" style="font-size: 3.5rem; font-weight: 800; text-align: center;">1000</div>
         </div>
-        <button class="btn btn-main" onclick="openScanner()">SKANNA & TA EMOT</button>
-        <button class="btn btn-main" style="background:#2d3436" onclick="showQR()">GE BORT 50 XO</button>
-        <div id="reader" style="display:none; width:100%; border-radius:20px; overflow:hidden; margin-top:10px;"></div>
-        <div id="qrcode-out" style="display:none; text-align:center; padding:15px; background:white; border-radius:20px; border:2px solid var(--xo-pink); margin-top:10px;"></div>
+        <button class="btn" style="width:100%; padding:16px; border-radius:18px; border:none; background:var(--xo-pink); color:white; font-weight:700;" onclick="switchView('grid')">ÖPPNA GRIDEN</button>
     </div>
 
     <div id="view-grid" class="view">
         <div class="status-area">
-            <div><span id="dot" class="dot"></span><span id="net-text">SÖKER NODER...</span></div>
-            <div><span id="online-count" style="color:var(--xo-pink); font-size: 1rem; font-weight: 900;">1</span> <span style="opacity: 0.7;">AKTIVA</span></div>
+            <div><span id="dot" class="dot"></span><span id="net-text">ANSLUTER...</span></div>
+            <div style="text-align:right;">ID: <span id="my-id-display"></span><br><span id="online-count">1</span> NODER AKTIVA</div>
         </div>
+        
         <div id="task-container"></div>
-        <div class="card" style="margin-top: 20px; border-style: dashed; background: #fafafa;">
-            <input type="text" id="task-input" placeholder="Vad behövs?" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box;">
-            <button class="btn btn-main" style="margin:0;" onclick="postTask()">LÄGG UPP PÅ GRIDEN</button>
+
+        <div class="card" style="margin-top: 10px; border-style: dashed; background: #fafafa;">
+            <input type="text" id="task-input" placeholder="Skriv något här..." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px;">
+            <button onclick="postTask()" style="width:100%; padding:12px; border-radius:12px; border:none; background:var(--xo-pink); color:white; font-weight:700;">LÄGG UPP PÅ GRIDEN</button>
         </div>
-        <button onclick="forceSync()" style="background:none; border:none; color:#ccc; font-size:0.5rem; margin-top:20px; width:100%;">RENSA ALL CACHE & NOLLSTÄLL</button>
+
+        <div class="debug-panel" id="debug">System initierat...</div>
+        <button onclick="location.reload()" style="background:none; border:none; color:#ccc; font-size:0.5rem; margin-top:10px; width:100%;">STARTA OM VIDSTRÄCKT SYNK</button>
     </div>
 </div>
 
@@ -61,104 +59,68 @@
 </div>
 
 <script>
-    // --- FIX 1 & 2: Stabilare relä + Radisk (IndexedDB) istället för LocalStorage ---
+    const debug = (msg) => {
+        const el = document.getElementById('debug');
+        el.innerHTML = `> ${msg}<br>${el.innerHTML}`;
+    };
+
+    // --- CLAUDES PEER-LISTA + EXTRA ---
     const gun = Gun({
-        peers: ['https://relay.peer.ooo/gun'],
-        localStorage: false, 
-        retry: 250
+        peers: [
+            'https://gun-manhattan.herokuapp.com/gun',
+            'https://relay.peer.ooo/gun',
+            'https://gunjs.herokuapp.com/gun'
+        ],
+        localStorage: false
     });
 
-    // FIX 3: Separata namespaces för att undvika datakrockar
-    const taskDB = gun.get('xo_tasks_v6');
-    const nodeDB = gun.get('xo_presence_v6');
+    const myID = 'N-' + Math.random().toString(36).substr(2, 4);
+    document.getElementById('my-id-display').innerText = myID;
+    
+    const taskDB = gun.get('xo_universal_grid_v6_1');
+    const presenceDB = gun.get('xo_presence_v6_1');
 
-    let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
-    let myID = localStorage.getItem('xo_peer_id') || 'N-' + Math.random().toString(36).substr(2, 5);
-    localStorage.setItem('xo_peer_id', myID);
-
-    function save() {
-        localStorage.setItem('xo_bal', balance);
-        document.getElementById('balance').innerText = Math.floor(balance);
-    }
-
-    // --- FIX 4: Robust Presence (Heartbeat) ---
-    const myPresence = nodeDB.get(myID);
-    function heartbeat() {
-        myPresence.put({ lastSeen: Date.now(), id: myID });
-    }
-    heartbeat();
-    setInterval(heartbeat, 5000);
+    // Heartbeat
+    setInterval(() => {
+        presenceDB.get(myID).put({ lastSeen: Date.now() });
+    }, 5000);
 
     let activeNodes = {};
-    nodeDB.map().on((data, id) => {
+    presenceDB.map().on((data, id) => {
         if (data && data.lastSeen > Date.now() - 15000) {
+            if(!activeNodes[id]) debug(`Ny nod hittad: ${id}`);
             activeNodes[id] = true;
         } else {
             delete activeNodes[id];
         }
         const count = Object.keys(activeNodes).length;
         document.getElementById('online-count').innerText = count;
-        document.getElementById('dot').className = 'dot online-dot';
-        document.getElementById('net-text').innerText = count > 1 ? 'NÄTVERK SÄKRAT' : 'RELAY ANSLUTEN';
+        if(count > 1) {
+            document.getElementById('dot').className = 'dot online-dot';
+            document.getElementById('net-text').innerText = 'MESH AKTIV';
+        }
     });
 
-    // --- FIX 5: Grid-system utan dubbletter ---
-    const renderedTasks = new Set();
+    gun.on('hi', peer => debug(`Ansluten till relä: ${peer.url}`));
+
     function postTask() {
-        const val = document.getElementById('task-input').value.trim();
-        if (!val) return;
-        const taskID = 'T_' + Date.now() + '_' + myID;
-        taskDB.get(taskID).put({ title: val, from: myID, status: 'open', ts: Date.now() });
-        document.getElementById('task-input').value = '';
+        const val = document.getElementById('task-input').value;
+        if(!val) return;
+        const taskID = 'T' + Date.now();
+        debug(`Skickar: ${val}`);
+        taskDB.get(taskID).put({ title: val, from: myID, status: 'open' });
+        document.getElementById('task-input').value = "";
     }
 
     taskDB.map().on((data, id) => {
-        if (!data || !data.title) return;
-        
-        // Ta bort om claimat
-        if (data.status === 'claimed') {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-            renderedTasks.delete(id);
-            return;
-        }
-
-        if (data.status !== 'open' || renderedTasks.has(id)) return;
-        
-        renderedTasks.add(id);
-        const container = document.getElementById('task-container');
+        if(!data || data.status !== 'open' || document.getElementById(id)) return;
+        debug(`Mottog data: ${data.title}`);
         const el = document.createElement('div');
         el.id = id;
         el.className = 'task-card';
-        el.innerHTML = `
-            <div>
-                <h4 style="margin:0">${data.title}</h4>
-                <p style="margin:0; font-size:0.7rem; opacity:0.5;">Från: ${data.from}</p>
-            </div>
-            <button class="btn" style="width:auto; padding:8px 12px; font-size:0.7rem; background:var(--xo-pink); color:white;" onclick="claim('${id}')">TA</button>
-        `;
-        container.prepend(el);
+        el.innerHTML = `<div><h4>${data.title}</h4><p>Från: ${data.from}</p></div>`;
+        document.getElementById('task-container').prepend(el);
     });
-
-    // FIX 6: Säkrare Claim (Läs först, skriv sen)
-    function claim(id) {
-        if (!confirm('Vill du hjälpa till?')) return;
-        taskDB.get(id).once(data => {
-            if (data && data.status === 'open') {
-                taskDB.get(id).put({ status: 'claimed', by: myID });
-            } else {
-                alert('Hoppsan, någon annan hann före!');
-            }
-        });
-    }
-
-    function forceSync() {
-        if (confirm('Detta nollställer din cache. Fortsätta?')) {
-            localStorage.clear();
-            indexedDB.deleteDatabase('radata');
-            location.reload();
-        }
-    }
 
     function switchView(v) {
         document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
@@ -166,25 +128,6 @@
         document.getElementById('view-'+v).classList.add('active');
         document.getElementById('nav-'+v).classList.add('active');
     }
-
-    // WALLET FUNKTIONER (QR/SCAN)
-    function openScanner() {
-        const d = document.getElementById('reader'); d.style.display='block';
-        const s = new Html5Qrcode("reader");
-        s.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            if (t.startsWith("XO_GIFT_")) { balance += 50; save(); s.stop(); d.style.display='none'; }
-        });
-    }
-
-    function showQR() {
-        if (balance < 50) return alert('För lite XO!');
-        const o = document.getElementById('qrcode-out'); o.innerHTML=''; o.style.display='block';
-        QRCode.toCanvas(document.createElement('canvas'), "XO_GIFT_"+Math.random(), { width: 220 }, (e, c) => {
-            if(!e) { o.appendChild(c); balance -= 50; save(); }
-        });
-    }
-
-    save();
 </script>
 </body>
 </html>
