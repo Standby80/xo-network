@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v14.2</title>
+    <title>XO Network - v14.3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -62,10 +62,16 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
             font-size: 0.9rem;
             flex-shrink: 0;
-            animation: slideIn 0.3s ease;
+            position: relative;
         }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        .task-time { 
+            font-size: 0.6rem; 
+            color: #bbb; 
+            position: absolute; 
+            top: 12px; 
+            right: 16px; 
+        }
 
         input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
 
@@ -149,7 +155,6 @@
 
     const channel = supabaseClient.channel('xo-global-v14', { config: { broadcast: { self: true }, presence: { key: myID } } });
 
-    // --- QR & TRANSACTION ---
     function showReceiveQR() {
         const qrDiv = document.getElementById('qrcode');
         qrDiv.innerHTML = "";
@@ -166,7 +171,6 @@
         document.getElementById('reader').style.display = "block";
         document.getElementById('qr-overlay').style.display = "flex";
         document.getElementById('qr-title').innerText = "Rikta kameran";
-
         html5QrCode = new Html5Qrcode("reader");
         html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
             handleScannedCode(decodedText);
@@ -192,7 +196,6 @@
         document.getElementById('qr-overlay').style.display = "none";
     }
 
-    // --- SYSTEM & DB ---
     channel.on('presence', { event: 'sync' }, () => {
         document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
     })
@@ -217,10 +220,17 @@
         const container = document.getElementById('grid-container');
         const el = document.createElement('div');
         el.className = 'task-card';
-        el.innerHTML = `<strong style="color:var(--xo-pink); font-size:0.75rem;">${t.author_id}</strong><br>${t.title}`;
-        container.appendChild(el); // Lägger till i slutet för chattrum-känsla
         
-        // Auto-scroll till botten
+        const date = t.created_at ? new Date(t.created_at) : new Date();
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+
+        el.innerHTML = `
+            <span class="task-time">${dateStr} ${timeStr}</span>
+            <strong style="color:var(--xo-pink); font-size:0.75rem;">${t.author_id}</strong><br>
+            ${t.title}
+        `;
+        container.appendChild(el);
         container.scrollTop = container.scrollHeight;
     }
 
@@ -237,8 +247,6 @@
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
         document.getElementById('view-'+v).classList.add('active');
         document.getElementById('nav-'+v).classList.add('active');
-        
-        // Om vi växlar till Griden, scrolla till botten direkt
         if(v === 'grid') {
             const c = document.getElementById('grid-container');
             c.scrollTop = c.scrollHeight;
@@ -267,7 +275,6 @@
         reader.readAsText(file);
     }
 
-    // Hämta historik och rendera
     supabaseClient.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
         if(data) {
             data.forEach(renderTask);
