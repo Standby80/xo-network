@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v15.3</title>
+    <title>XO Network - v14.4</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -13,72 +13,111 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 110px; color: var(--xo-dark); overflow-x: hidden; }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
 
+        /* Navigation */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; border-top: 1px solid #eee; }
         .nav-item { font-size: 0.7rem; font-weight: 700; color: #bbb; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
         .nav-item.active { color: var(--xo-pink); }
         .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
-        .view { display: none; }
-        .view.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
 
-        .card { background: var(--xo-white); border-radius: 25px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
-        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -2px; }
+        /* Cards */
+        .card { background: var(--xo-white); border-radius: 30px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
+        .balance-val { font-size: 4rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -3px; }
         
-        .status-area { background: #2d3436; padding: 12px; border-radius: 15px; color: #fff; font-size: 0.7rem; display: flex; justify-content: space-between; margin-bottom: 20px; }
-        
-        .log-container { height: 380px; overflow-y: auto; background: #f0f0f0; border-radius: 20px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #ddd; }
-        .task-card { background: #fff; border-radius: 15px; padding: 12px; border-left: 5px solid var(--xo-pink); box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.9rem; position: relative; flex-shrink: 0; }
-        .task-time { font-size: 0.6rem; color: #bbb; position: absolute; top: 12px; right: 12px; }
+        .status-area { background: #2d3436; padding: 14px; border-radius: 20px; color: #fff; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 10px #2ecc71; display: inline-block; margin-right: 6px; }
 
-        .btn { border: none; padding: 14px; border-radius: 15px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; background: var(--xo-pink); color: white; transition: 0.2s; }
-        .btn-dark { background: #444; }
-        
-        input { width: 100%; padding: 14px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; outline: none; font-size: 1rem; }
-        #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
+        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; }
+        .btn:active { transform: scale(0.98); }
+        .btn-dark { background: #444; color: #fff; }
+
+        /* Grid Chat */
+        #grid-container { 
+            height: 380px; 
+            overflow-y: auto; 
+            background: rgba(0,0,0,0.03); 
+            border-radius: 25px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px;
+            border: 1px solid #eee;
+        }
+
+        .task-card { 
+            background: #fff; 
+            border-radius: 18px; 
+            padding: 12px 16px; 
+            border-left: 6px solid var(--xo-pink); 
+            box-shadow: 0 3px 10px rgba(0,0,0,0.03); 
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .task-id { color: var(--xo-pink); font-weight: 800; font-size: 0.7rem; }
+        .task-time { color: #ccc; font-size: 0.65rem; font-weight: 600; }
+
+        input { width: 100%; padding: 16px; border-radius: 18px; border: 1px solid #ddd; margin-bottom: 12px; outline: none; font-size: 1rem; }
+
+        #qr-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; color: white; }
+        #reader { width: 100%; max-width: 350px; border-radius: 20px; overflow: hidden; background: white; }
+        #qr-canvas-container { background: white; padding: 20px; border-radius: 25px; min-width: 300px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="status-area">
-        <div><span style="color:#2ecc71">●</span> NÄTVERK AKTIVT</div>
-        <div id="node-count" style="color:var(--xo-pink)">0 ONLINE</div>
+        <div><span id="status-dot" class="dot"></span><span>NÄTVERK LIVE</span></div>
+        <div id="node-count" style="font-weight: 900; color: var(--xo-pink);">0 ONLINE</div>
     </div>
 
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div style="font-size:0.6rem; color:#bbb; text-align:center;">DITT SALDO</div>
+            <span style="font-size:0.65rem; font-weight:800; color:#bbb; text-transform:uppercase;">Social Kraft</span>
             <div class="balance-val" id="balance">1000</div>
-            <p style="font-size: 0.6rem; color: #ccc; text-align:center; font-family: monospace; margin:0;">ID: <span id="display-id">...</span></p>
+            <div style="height: 8px; background: #eee; border-radius: 10px; margin: 15px 0; overflow: hidden;">
+                <div id="rust-bar" style="height: 100%; background: var(--xo-pink); width: 100%; transition: 1s;"></div>
+            </div>
+            <p style="font-size: 0.6rem; color: #ccc; text-align:center; font-family: monospace;">ID: <span id="display-id">...</span></p>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button class="btn" onclick="openScanner()">SKICKA</button>
-            <button class="btn btn-dark" onclick="showReceiveQR()">TA EMOT</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px;">
+            <button class="btn" onclick="openScanner()">📤 SKICKA</button>
+            <button class="btn btn-dark" onclick="showReceiveQR()">📥 TA EMOT</button>
+        </div>
+        <div class="card" style="background:#2d3436; color:white;">
+            <button class="btn btn-dark" style="font-size:0.75rem; border: 1px solid #555;" onclick="downloadBackup()">💾 BACKUP</button>
         </div>
     </div>
 
     <div id="view-grid" class="view">
-        <h3 style="margin:0 0 10px;">Griden 🌍</h3>
-        <div id="grid-container" class="log-container"></div>
-        <input type="text" id="grid-input" placeholder="Skriv något till alla...">
-        <button class="btn" onclick="sendToDatabase('grid')">PUBLICERA</button>
+        <h3 style="margin-bottom:10px;">Griden 🌍</h3>
+        <div id="grid-container"></div>
+        <div class="card" style="border-style: dashed; background: transparent; padding: 15px;">
+            <input type="text" id="grid-input" placeholder="Skriv till byn...">
+            <button class="btn" onclick="sendToDatabase()">PUBLICERA</button>
+        </div>
     </div>
 
-    <div id="view-help" class="view">
-        <h3 style="margin:0 0 10px;">Handtaget 🤝</h3>
-        <div id="help-container" class="log-container"></div>
-        <input type="text" id="help-input" placeholder="Vad behöver du hjälp med?">
-        <button class="btn btn-dark" onclick="sendToDatabase('help')">BE OM HJÄLP</button>
-    </div>
-
-    <div id="view-market" class="view"><h3>Torget 🏪</h3><div class="card">Kommer snart...</div></div>
+    <div id="view-family" class="view"><h3>Familjen 🧸</h3><div class="card">Logg kommer...</div></div>
+    <div id="view-market" class="view"><h3>Torget 🏪</h3><div class="card">Erbjudanden kommer...</div></div>
 </div>
 
 <div id="qr-overlay" onclick="closeQR()">
-    <div style="background:white; padding:20px; border-radius:25px;" onclick="event.stopPropagation()">
-        <div id="qrcode"></div>
-        <div id="reader" style="display:none; width:280px;"></div>
+    <div id="qr-canvas-container" onclick="event.stopPropagation()">
+        <div id="reader"></div> 
+        <div id="qrcode" style="display: flex; justify-content: center;"></div> 
         <button class="btn btn-dark" style="margin-top:15px;" onclick="closeQR()">STÄNG</button>
     </div>
 </div>
@@ -86,7 +125,7 @@
 <div class="nav-bar">
     <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
     <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
-    <div class="nav-item" id="nav-help" onclick="switchView('help')"><span class="nav-icon">🤝</span>Handtaget</div>
+    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
     <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
@@ -99,65 +138,44 @@
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     localStorage.setItem('xo_id', myID);
 
-    // Render-funktion
-    function renderTask(t) {
-        const targetId = (t.type === 'help') ? 'help-container' : 'grid-container';
-        const container = document.getElementById(targetId);
-        if(!container) return;
+    const channel = supabaseClient.channel('xo-global-v14', { config: { broadcast: { self: true }, presence: { key: myID } } });
 
+    function renderTask(t) {
+        const container = document.getElementById('grid-container');
         const el = document.createElement('div');
         el.className = 'task-card';
-        const timeStr = new Date(t.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Tids-logik med fallback
+        const date = t.created_at ? new Date(t.created_at) : new Date();
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         el.innerHTML = `
-            <span class="task-time">${timeStr}</span>
-            <strong style="color:var(--xo-pink); font-size:0.7rem;">${t.author_id}</strong><br>
-            ${t.title}
+            <div class="task-header">
+                <span class="task-id">${t.author_id}</span>
+                <span class="task-time">${timeStr}</span>
+            </div>
+            <div class="task-body">${t.title}</div>
         `;
         container.appendChild(el);
         container.scrollTop = container.scrollHeight;
     }
 
-    // Skicka-funktion
-    async function sendToDatabase(type) {
-        const input = document.getElementById(type + '-input');
-        if(!input || !input.value) return;
-        const text = input.value;
-        input.value = ""; // Töm direkt för bättre känsla
-        
-        const { error } = await supabaseClient.from('tasks').insert([{ 
-            title: text, 
-            author_id: myID, 
-            type: type 
-        }]);
-        if(error) console.error("Fel vid sändning:", error);
+    async function sendToDatabase() {
+        const input = document.getElementById('grid-input');
+        if(!input.value) return;
+        const { error } = await supabaseClient.from('tasks').insert([{ title: input.value, author_id: myID }]);
+        if(error) console.log("Fel:", error);
+        input.value = "";
     }
 
-    // Realtime lyssnare för HELA tabellen
-    supabaseClient.channel('any')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => {
-        renderTask(payload.new);
+    channel.on('presence', { event: 'sync' }, () => {
+        document.getElementById('node-count').innerText = Object.keys(channel.presenceState()).length + " ONLINE";
     })
+    .on('broadcast', { event: 'transfer' }, ({ payload }) => {
+        if (payload.to === myID) { balance += parseFloat(payload.amount); updateUI(); }
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, payload => renderTask(payload.new))
     .subscribe();
-
-    // Hämta historik vid start
-    async function loadHistory() {
-        const { data } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: true });
-        if(data) {
-            document.getElementById('grid-container').innerHTML = "";
-            document.getElementById('help-container').innerHTML = "";
-            data.forEach(renderTask);
-        }
-    }
-
-    function switchView(v) {
-        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-        document.getElementById('view-'+v).classList.add('active');
-        document.getElementById('nav-'+v).classList.add('active');
-        const c = document.getElementById(v + '-container');
-        if(c) c.scrollTop = c.scrollHeight;
-    }
 
     function updateUI() {
         document.getElementById('balance').innerText = Math.floor(balance);
@@ -165,34 +183,43 @@
         localStorage.setItem('xo_bal', balance);
     }
 
-    // QR funktioner
+    function switchView(v) {
+        document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+        document.getElementById('view-'+v).classList.add('active');
+        document.getElementById('nav-'+v).classList.add('active');
+        if(v==='grid') { const c = document.getElementById('grid-container'); c.scrollTop = c.scrollHeight; }
+    }
+
+    // QR & Scanner (Förenklad för att spara plats)
     function showReceiveQR() {
         const qrDiv = document.getElementById('qrcode'); qrDiv.innerHTML = "";
-        document.getElementById('reader').style.display = "none";
-        qrDiv.style.display = "block";
         document.getElementById('qr-overlay').style.display = "flex";
         new QRCode(qrDiv, { text: "XO_ADDR_" + myID, width: 200, height: 200 });
     }
+    
     let html5QrCode;
     function openScanner() {
-        document.getElementById('qrcode').style.display = "none";
-        document.getElementById('reader').style.display = "block";
         document.getElementById('qr-overlay').style.display = "flex";
         html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 200 }, (text) => {
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
             if (text.startsWith("XO_ADDR_")) {
-                const amount = prompt("Mängd XO?", "50");
-                if (amount && balance >= parseFloat(amount)) {
-                    balance -= parseFloat(amount); updateUI();
-                    alert("Skickat!");
+                const amount = prompt("XO att skicka?", "50");
+                if (amount && balance >= amount) {
+                    balance -= amount;
+                    channel.send({ type: 'broadcast', event: 'transfer', payload: { to: text.replace("XO_ADDR_", ""), from: myID, amount } });
+                    updateUI();
                 }
             }
             closeQR();
         });
     }
-    function closeQR() { if(html5QrCode) html5QrCode.stop().catch(()=>{}); document.getElementById('qr-overlay').style.display = "none"; }
+    function closeQR() { if(html5QrCode) html5QrCode.stop(); document.getElementById('qr-overlay').style.display = "none"; }
 
-    loadHistory();
+    supabaseClient.from('tasks').select('*').order('created_at', { ascending: true }).then(({data}) => {
+        if(data) data.forEach(renderTask);
+    });
+
     updateUI();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
