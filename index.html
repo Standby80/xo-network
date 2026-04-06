@@ -3,42 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO Network - v10.0</title>
+    <title>XO Network - v11.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f9f9f9; --xo-white: #ffffff; }
-        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 90px; color: var(--xo-dark); }
-        .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-        .view { display: none; animation: fadeIn 0.3s ease; }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Wallet Cards */
-        .card { background: white; border-radius: 30px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #eee; position: relative; }
-        .balance-label { font-weight: 900; color: var(--xo-pink); letter-spacing: 2px; font-size: 0.7rem; text-transform: uppercase; }
-        .balance-val { font-size: 4rem; font-weight: 800; margin: 10px 0; color: #333; letter-spacing: -2px; }
+        :root { --xo-pink: #ff69b4; --xo-dark: #2d3436; --xo-bg: #f4f7f6; --xo-white: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--xo-bg); margin: 0; padding-bottom: 100px; color: var(--xo-dark); overflow-x: hidden; }
         
-        /* Entropy Bar */
-        .progress-bg { width: 100%; height: 8px; background: #eee; border-radius: 10px; margin: 15px 0; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--xo-pink); border-radius: 10px; transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        /* Layout & Nav */
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; border-top: 1px solid #eee; }
+        .nav-item { font-size: 0.65rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-item.active { color: var(--xo-pink); transform: translateY(-5px); }
+        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
-        /* Buttons */
-        .btn { border: none; padding: 18px; border-radius: 20px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; margin: 5px 0; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn-pink { background: var(--xo-pink); color: white; }
+        /* Views */
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Cards */
+        .card { background: var(--xo-white); border-radius: 28px; padding: 22px; box-shadow: 0 8px 25px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #eee; }
+        .balance-val { font-size: 3.5rem; font-weight: 800; text-align: center; margin: 10px 0; letter-spacing: -2px; }
+        
+        /* Stats & Labels */
+        .label-tiny { font-size: 0.6rem; font-weight: 900; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
+        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .stat-box { background: #fafafa; padding: 12px; border-radius: 18px; text-align: center; border: 1px solid #f0f0f0; }
+        .stat-num { font-weight: 800; font-size: 1.1rem; display: block; color: var(--xo-pink); }
+
+        /* Progress Bar (Entropy) */
+        .progress-container { height: 8px; background: #eee; border-radius: 10px; margin: 12px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--xo-pink); transition: width 0.8s ease; }
+
+        /* Grid Tasks */
+        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .filter-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #ddd; background: #fff; font-size: 0.7rem; font-weight: bold; white-space: nowrap; }
+        .filter-btn.active { background: var(--xo-pink); color: white; border-color: var(--xo-pink); }
+        
+        .task-card { background: #fff; border-radius: 20px; padding: 15px; margin-bottom: 12px; border-left: 5px solid var(--xo-pink); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .tag { font-size: 0.5rem; padding: 3px 8px; border-radius: 10px; background: #eee; font-weight: bold; vertical-align: middle; margin-left: 5px; }
+
+        /* Inputs & Buttons */
+        .btn { border: none; padding: 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-main { background: var(--xo-pink); color: white; }
         .btn-dark { background: var(--xo-dark); color: white; }
-        .btn-outline { background: transparent; border: 2px solid #ddd; color: #888; font-size: 0.8rem; }
-
-        /* Witness List */
-        .witness-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; }
-        .witness-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 8px; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .witness-avatar { width: 35px; height: 35px; border-radius: 50%; background: var(--xo-pink); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.7rem; }
-
-        /* Nav */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; }
-        .nav-item { font-size: 0.7rem; font-weight: bold; color: #ccc; cursor: pointer; text-align: center; flex: 1; }
-        .nav-item.active { color: var(--xo-pink); }
+        input { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; outline: none; }
     </style>
 </head>
 <body>
@@ -47,58 +57,101 @@
     
     <div id="view-wallet" class="view active">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="balance-label">Din Kraft</div>
-                <div id="node-badge" style="font-size: 0.5rem; background: #eee; padding: 3px 8px; border-radius: 10px; color: #999;">OFFLINE</div>
+            <div style="display: flex; justify-content: space-between;">
+                <span class="label-tiny">Social Kraft</span>
+                <span id="node-status" style="font-size: 0.5rem; color: #2ecc71; font-weight: 800;">● 1 ONLINE</span>
             </div>
             <div class="balance-val" id="balance">1000</div>
-            
-            <div style="display: flex; justify-content: space-between; font-size: 0.6rem; font-weight: bold; color: #aaa;">
-                <span>SYSTEMHÄLSA</span>
-                <span id="rust-percent">100%</span>
-            </div>
-            <div class="progress-bg">
-                <div id="rust-bar" class="progress-fill" style="width: 100%;"></div>
-            </div>
-            <p style="font-size: 0.55rem; color: #bbb; line-height: 1.4;">ID: <strong id="display-id">...</strong> (Dela detta för att bli signerad)</p>
-        </div>
-
-        <div class="card" style="padding: 15px; border: 1px dashed var(--xo-pink);">
-            <div class="balance-label" style="margin-bottom: 10px; font-size: 0.6rem;">Signera en granne (Ge tillit)</div>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="target-id" placeholder="Grannens ID" style="flex: 1; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-size: 0.8rem; outline: none;">
-                <button class="btn btn-pink" style="width: auto; padding: 10px 20px; margin: 0; font-size: 0.8rem;" onclick="signNeighbor()">SIGNERA</button>
+            <div class="progress-container"><div id="rust-bar" class="progress-fill" style="width: 100%;"></div></div>
+            <div style="display:flex; justify-content: space-between; font-size: 0.55rem; color: #aaa; font-weight: 800;">
+                <span>ENTROPI (ROST)</span>
+                <span id="rust-text">100% FRISK</span>
             </div>
         </div>
 
-        <div class="witness-section">
-            <div class="balance-label" style="margin-bottom: 15px;">Dina Vittnen (Social Tillit)</div>
-            <div id="witness-list-container">
-                <p style="font-size: 0.7rem; color: #ccc; font-style: italic;">Inga vittnen än. Be en granne signera dig!</p>
-            </div>
+        <div class="stats-row">
+            <div class="stat-box"><span class="stat-num" id="stats-helped">0</span><span class="label-tiny">Gett hjälp</span></div>
+            <div class="stat-box"><span class="stat-num" id="stats-asked">0</span><span class="label-tiny">Fått hjälp</span></div>
         </div>
 
-        <button class="btn btn-outline" style="margin-top: 30px;" onclick="downloadBackup()">💾 EXPORTERA BACKUP</button>
+        <div class="card" style="background: #2d3436; color: white;">
+            <span class="label-tiny" style="color: var(--xo-pink);">Säkerhet</span>
+            <p style="font-size: 0.7rem; opacity: 0.8; margin: 10px 0 15px;">Ditt ID: <strong id="display-id">...</strong></p>
+            <button class="btn btn-main" style="font-size: 0.7rem; padding: 10px;" onclick="downloadBackup()">💾 BACKUP PLÅNBOK</button>
+        </div>
     </div>
 
     <div id="view-grid" class="view">
-        <h2 style="margin-top: 0;">Griden 🌍</h2>
-        <div id="task-container" style="margin-bottom: 20px;"></div>
+        <div class="filter-bar">
+            <button class="filter-btn active">ALLA</button>
+            <button class="filter-btn">🆘 NÖD</button>
+            <button class="filter-btn">🤝 HJÄLP</button>
+            <button class="filter-btn">🍎 ERBJUDANDE</button>
+            <button class="filter-btn">📢 NYHET</button>
+        </div>
+        <div id="grid-container"></div>
+        <div class="card" style="border-style: dashed;">
+            <input type="text" id="grid-input" placeholder="Vad vill du dela med byn?">
+            <button class="btn btn-main" onclick="sendToGrid()">PUBLICERA</button>
+        </div>
+    </div>
+
+    <div id="view-family" class="view">
+        <h3 style="margin-top: 0;">Hushålls-logg 🧸</h3>
         <div class="card">
-            <input type="text" id="task-input" placeholder="Vad händer i byn?" style="width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box;">
-            <button class="btn btn-pink" style="margin:0" onclick="sendTask()">PUBLICERA</button>
+            <span class="label-tiny">Dagens Uppdrag</span>
+            <div id="family-tasks" style="margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                    <span>Diskmaskinen</span><button class="filter-btn" style="padding:4px 10px;">+10 XO</button>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                    <span>Läxor klara</span><button class="filter-btn" style="padding:4px 10px;">+20 XO</button>
+                </div>
+            </div>
+        </div>
+        <div class="card" style="background: #e3f2fd; border: none;">
+            <span class="label-tiny" style="color: #1976d2;">Gemensamt Mål</span>
+            <h4 style="margin: 10px 0 5px;">Fredagsmys-fond</h4>
+            <div class="progress-container" style="background: rgba(0,0,0,0.05);"><div style="width: 65%; background: #1976d2;" class="progress-fill"></div></div>
+            <p style="font-size: 0.6rem; color: #1976d2; font-weight: bold;">325 / 500 XO INSAMLAT</p>
+        </div>
+    </div>
+
+    <div id="view-market" class="view">
+        <h3 style="margin-top: 0;">Torget 🏪</h3>
+        <div class="card">
+            <div style="display:flex; gap:15px; align-items:center;">
+                <div style="width:50px; height:50px; background:#f0f0f0; border-radius:12px; display:flex; align-items:center; justify-content:center;">☕</div>
+                <div style="flex:1">
+                    <h4 style="margin:0">Byns Café</h4>
+                    <p style="margin:0; font-size:0.7rem; color:#666;">Gratis påtår vid köp</p>
+                </div>
+                <button class="filter-btn" style="background:var(--xo-dark); color:white;">15 XO</button>
+            </div>
+        </div>
+        <div class="card">
+            <div style="display:flex; gap:15px; align-items:center;">
+                <div style="width:50px; height:50px; background:#f0f0f0; border-radius:12px; display:flex; align-items:center; justify-content:center;">🥦</div>
+                <div style="flex:1">
+                    <h4 style="margin:0">Matbutiken</h4>
+                    <p style="margin:0; font-size:0.7rem; color:#666;">10% på valfri vara</p>
+                </div>
+                <button class="filter-btn" style="background:var(--xo-dark); color:white;">50 XO</button>
+            </div>
         </div>
     </div>
 
 </div>
 
 <div class="nav-bar">
-    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')">💎 Plånbok</div>
-    <div class="nav-item" id="nav-grid" onclick="switchView('grid')">🌍 Griden</div>
+    <div class="nav-item active" id="nav-wallet" onclick="switchView('wallet')"><span class="nav-icon">💎</span>Plånbok</div>
+    <div class="nav-item" id="nav-grid" onclick="switchView('grid')"><span class="nav-icon">🌍</span>Griden</div>
+    <div class="nav-item" id="nav-family" onclick="switchView('family')"><span class="nav-icon">🧸</span>Familj</div>
+    <div class="nav-item" id="nav-market" onclick="switchView('market')"><span class="nav-icon">🏪</span>Torget</div>
 </div>
 
 <script>
-    // --- SUPABASE KONFIG ---
+    // --- SUPABASE & DATA ---
     const SUPABASE_URL = 'https://pwittnltsbtojzkhovos.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_HmgEfk5xCUfFS_RNPlZ3RA_6qmNxizl';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -106,9 +159,9 @@
     let myID = localStorage.getItem('xo_id') || 'XO-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     let balance = parseFloat(localStorage.getItem('xo_bal')) || 1000;
     let lastActive = parseInt(localStorage.getItem('xo_last_active')) || Date.now();
-    let witnesses = JSON.parse(localStorage.getItem('xo_witnesses')) || [];
+    let stats = JSON.parse(localStorage.getItem('xo_stats')) || { helped: 0, asked: 0 };
 
-    const channel = supabaseClient.channel('xo-global', { 
+    const channel = supabaseClient.channel('xo-global-v11', { 
         config: { broadcast: { self: true }, presence: { key: myID } } 
     });
 
@@ -116,93 +169,72 @@
         localStorage.setItem('xo_id', myID);
         localStorage.setItem('xo_bal', balance);
         localStorage.setItem('xo_last_active', lastActive);
-        localStorage.setItem('xo_witnesses', JSON.stringify(witnesses));
+        localStorage.setItem('xo_stats', JSON.stringify(stats));
         updateUI();
     }
 
     function updateUI() {
         document.getElementById('balance').innerText = Math.floor(balance);
         document.getElementById('display-id').innerText = myID;
-        renderWitnesses();
-        applyEntropy();
-    }
-
-    // --- ENTROPI (HÄLSA) ---
-    function applyEntropy() {
-        const hoursPassed = (Date.now() - lastActive) / (1000 * 60 * 60);
-        const health = Math.max(0, 100 - (hoursPassed * 0.5)).toFixed(1); // 0.5% rost per timme
-        document.getElementById('rust-percent').innerText = health + "%";
-        document.getElementById('rust-bar').style.width = health + "%";
-    }
-
-    // --- SOCIAL TILLIT (SIGNERING) ---
-    function signNeighbor() {
-        const target = document.getElementById('target-id').value.trim().toUpperCase();
-        if(!target || target === myID) return alert("Ange ett giltigt ID (inte ditt eget)");
+        document.getElementById('stats-helped').innerText = stats.helped;
+        document.getElementById('stats-asked').innerText = stats.asked;
         
+        // Rost-logik
+        const hours = (Date.now() - lastActive) / (1000 * 60 * 60);
+        const health = Math.max(0, 100 - (hours * 0.2)).toFixed(1);
+        document.getElementById('rust-bar').style.width = health + "%";
+        document.getElementById('rust-text').innerText = health + "% FRISK";
+    }
+
+    // --- GRID LOGIK ---
+    function sendToGrid() {
+        const input = document.getElementById('grid-input');
+        if(!input.value) return;
         channel.send({
             type: 'broadcast',
-            event: 'witness-event',
-            payload: { from: myID, to: target, timestamp: Date.now() }
+            event: 'grid-msg',
+            payload: { content: input.value, from: myID, id: Date.now() }
         });
-        
-        alert("Signatur skickad till " + target + "!");
-        document.getElementById('target-id').value = "";
-        lastActive = Date.now(); // Att lita på någon ger dig hälsa!
+        stats.asked++;
+        lastActive = Date.now();
+        input.value = "";
         save();
     }
 
-    function renderWitnesses() {
-        const container = document.getElementById('witness-list-container');
-        if(witnesses.length === 0) return;
-        
-        container.innerHTML = witnesses.map(w => `
-            <div class="witness-item">
-                <div class="witness-avatar">${w.substring(3,5)}</div>
-                <div><strong>${w}</strong> har bekräftat din tillit.</div>
+    function renderGrid(data) {
+        if(document.getElementById(data.id)) return;
+        const container = document.getElementById('grid-container');
+        const el = document.createElement('div');
+        el.id = data.id;
+        el.className = 'task-card';
+        el.innerHTML = `
+            <div style="font-size:0.85rem; font-weight:600;">${data.content}</div>
+            <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span class="label-tiny">Från: ${data.from}</span>
+                <button class="filter-btn" style="padding:4px 10px; font-size:0.5rem;" onclick="helpOut('${data.id}')">HJÄLP TILL</button>
             </div>
-        `).join('');
+        `;
+        container.prepend(el);
     }
 
-    // --- NÄTVERKSLYSSNARE ---
-    channel
-    .on('presence', { event: 'sync' }, () => {
-        const count = Object.keys(channel.presenceState()).length;
-        document.getElementById('node-badge').innerText = count + " ONLINE";
-        document.getElementById('node-badge').style.background = "#e3f9e5";
-    })
-    .on('broadcast', { event: 'witness-event' }, ({ payload }) => {
-        if(payload.to === myID && !witnesses.includes(payload.from)) {
-            witnesses.push(payload.from);
-            lastActive = Date.now(); // Att bli signerad återställer din hälsa!
-            alert("Du har blivit signerad av " + payload.from + "!");
-            save();
-        }
-    })
-    .on('broadcast', { event: 'new-task' }, ({ payload }) => {
-        renderTask(payload);
-    })
-    .subscribe();
-
-    // --- GRID & ÖVRIGT ---
-    function sendTask() {
-        const input = document.getElementById('task-input');
-        if (!input.value) return;
-        channel.send({ type: 'broadcast', event: 'new-task', payload: { title: input.value, from: myID, id: Date.now() } });
-        input.value = "";
+    function helpOut(id) {
+        alert("Du har valt att hjälpa till! +5 XO genereras som tack.");
+        stats.helped++;
+        balance += 5;
         lastActive = Date.now();
         save();
     }
 
-    function renderTask(data) {
-        const container = document.getElementById('task-container');
-        const el = document.createElement('div');
-        el.className = 'card';
-        el.style.padding = '15px';
-        el.innerHTML = `<strong style="color:var(--xo-pink)">${data.from}:</strong> ${data.title}`;
-        container.prepend(el);
-    }
+    // --- REALTIME ---
+    channel
+    .on('presence', { event: 'sync' }, () => {
+        const count = Object.keys(channel.presenceState()).length;
+        document.getElementById('node-status').innerText = `● ${count} ONLINE`;
+    })
+    .on('broadcast', { event: 'grid-msg' }, ({ payload }) => renderGrid(payload))
+    .subscribe();
 
+    // --- NAV & BACKUP ---
     function switchView(v) {
         document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
@@ -211,7 +243,7 @@
     }
 
     function downloadBackup() {
-        const data = { id: myID, bal: balance, witnesses: witnesses, secret: "XO_V10" };
+        const data = { id: myID, bal: balance, stats: stats, date: new Date() };
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -220,7 +252,7 @@
     }
 
     updateUI();
-    setInterval(applyEntropy, 60000); // Uppdatera rosten varje minut
+    setInterval(updateUI, 60000); // Uppdatera hälsa varje minut
 </script>
 </body>
 </html>
